@@ -1,0 +1,227 @@
+# MunichGlance TRMNL Server Configuration
+# =========================================
+#
+# This file contains all non-sensitive configuration options.
+# Sensitive values (like API keys) should be set via environment variables
+# using the ${ENV_VAR:default} syntax.
+#
+# Environment variable substitution:
+#   ${VAR_NAME}           - Substitutes VAR_NAME, empty if not set
+#   ${VAR_NAME:default}   - Substitutes VAR_NAME, uses 'default' if not set
+
+# =============================================================================
+# Server Configuration
+# =============================================================================
+server:
+  # Host address to bind the server to
+  # Use 0.0.0.0 to accept connections from any interface
+  host: "0.0.0.0"
+
+  # Port number for the HTTP server
+  port: 4567
+
+  # Enable debug mode for development (enables detailed error messages)
+  debug: false
+
+  # Timezone for displaying times (IANA timezone format)
+  # Examples: Europe/Berlin, America/New_York, Asia/Tokyo
+  timezone: "Europe/Berlin"
+
+# =============================================================================
+# TRMNL Device Settings
+# =============================================================================
+device:
+  # Time in seconds between device screen refreshes (fallback)
+  # This is overridden by dynamic refresh_schedule if configured
+  refresh_time: 120
+
+  # API key for device setup/authentication
+  # SENSITIVE: Should be set via environment variable
+  api_key: "${SETUP_API_KEY:}"
+
+  # Friendly identifier shown during device setup
+  friendly_id: "munich-glance"
+
+  # Message displayed during device setup process
+  setup_message: "MunichGlance Dashboard"
+
+  # ---------------------------------------------------------------------------
+  # Sleep Mode Configuration
+  # ---------------------------------------------------------------------------
+  # Sleep mode puts the device into low-power mode during specified hours.
+  # This saves battery by stopping screen refreshes overnight when you're asleep.
+  # The device will automatically wake up when the sleep window ends.
+  #
+  # When sleep mode is triggered:
+  # - Device receives special_function="sleep" from the API
+  # - Device enters deep sleep for up to 8 hours
+  # - Screen shows last displayed content (no additional power used)
+  # - Device wakes and resumes normal operation after sleep window ends
+
+  # Enable sleep mode (true/false)
+  sleep_enabled: true
+
+  # Sleep window start time (HH:MM in 24-hour format)
+  # Device will enter sleep mode after this time
+  sleep_start: "23:00"
+
+  # Sleep window end time (HH:MM in 24-hour format)
+  # Device will resume normal operation after this time
+  # Supports overnight windows (e.g., 23:00 - 06:30)
+  sleep_end: "06:30"
+
+  # Custom image to display when entering sleep mode (optional)
+  # Path is relative to the web/ directory (served from /static/)
+  # If not set, the device will show the last displayed screen during sleep
+  #
+  # Examples:
+  #   sleep_image_path: "sleep-image.bmp"       # Shows web/sleep-image.bmp
+  #   sleep_image_path: ""                       # (default) Keep last screen
+  #
+  # To generate a custom sleep image, run:
+  #   python scripts/generate_sleep_image.py
+  sleep_image_path: "sleep-image.bmp"
+
+# =============================================================================
+# Display Settings
+# =============================================================================
+display:
+  # Dithering algorithm for converting images to e-ink display format
+  # Options:
+  #   - none: No dithering (sharp edges, may show banding)
+  #   - floyd_steinberg: Error diffusion dithering (smooth gradients, recommended)
+  #   - ordered: Ordered/Bayer dithering (patterned, predictable)
+  dithering_mode: "floyd_steinberg"
+
+# =============================================================================
+# Dynamic Refresh Schedule
+# =============================================================================
+# Adjust refresh intervals based on day of week and time of day.
+# Uses YAML anchors (&weekday, *weekday) to avoid repetition.
+refresh_schedule:
+  # Global default refresh interval (seconds)
+  default: 120  # 2 minutes
+
+  # Weekday schedule (Monday-Friday)
+  mon: &weekday
+    default: 120  # 2 minutes outside rush hours
+    intervals:
+      - time: "07:00-08:00"
+        refresh: 60  # 1 minute during morning rush
+      - time: "15:50-16:30"
+        refresh: 60  # 1 minute during afternoon rush
+  tue: *weekday
+  wed: *weekday
+  thu: *weekday
+  fri: *weekday
+
+  # Weekend schedule (slower refresh)
+  sat:
+    default: 600  # 10 minutes
+  sun:
+    default: 600  # 10 minutes
+
+# =============================================================================
+# MunichGlance Plugin - MVG Transit Configuration
+# =============================================================================
+mvg:
+  # Display name shown in the header
+  display_station: Ridlerstraße
+
+  # Maximum number of departures to display (across all stations)
+  departure_limit: 15
+
+  # Walking time offset in minutes
+  # Departures sooner than this will be filtered out
+  # Set to your walking time to the station
+  offset_minutes: 0
+
+  # Maximum minutes into the future to show departures
+  # Departures beyond this time will not be displayed
+  max_minutes: 60
+
+  # Show delay information next to departure times
+  show_delays: true
+
+  # Show platform/track information
+  show_platform: false
+
+  # Show cancelled departures (with strikethrough)
+  show_cancelled: true
+
+  # Show departures grouped by station with station headers
+  # When enabled, displays station name above each group of departures
+  # with slightly smaller departure rows
+  # Bidirectional departures (same line, 2 directions) are shown in two columns
+  show_groups: true
+
+  # Compact direction display mode
+  # When enabled, shows all departure times for each direction on a single row
+  # Example: "→ Aidenbachstraße [53] 5 min / 12 min / 21 min"
+  # When disabled (default), shows max 2 rows per direction
+  compact_directions: false
+
+  # Font scale factor (0.8 = smaller, 1.0 = default, 1.2 = larger)
+  font_scale: 0.8
+
+  # Time display format
+  # Options:
+  #   - relative: Shows "5 min", "12 min"
+  #   - absolute: Shows "14:32", "15:05"
+  time_format: "relative"
+
+  # Fallback refresh interval for fetching departures from MVG API (seconds)
+  # Used when no refresh_schedule is defined
+  # Minimum recommended: 60 (to avoid rate limiting)
+  refresh_interval: 60
+
+  # Cache TTL for departure data (seconds)
+  # Used as fallback when API is unavailable
+  cache_ttl: 30
+
+# =============================================================================
+# Multi-Station Departures Configuration
+# =============================================================================
+# Define multiple stations with specific line/direction filters.
+# Departures from all stations are aggregated and sorted by time.
+departures:
+- station: Ridlerstraße
+  filters:
+  - type: BUS
+    line: '53'
+  - type: BUS
+    line: '134'
+    direction: Fürstenried West
+- station: Schwanthalerhöhe
+  filters:
+  - type: UBAHN
+    line: U5
+    direction: Neuperlach Süd
+- station: Heimeranplatz
+  filters:
+  - type: BUS
+    line: '62'
+    direction: Rotkreuzplatz
+
+# =============================================================================
+# MunichGlance Plugin - Weather Configuration
+# =============================================================================
+weather:
+  # Latitude for weather location (WGS84 decimal degrees)
+  # Default: Munich city center
+  latitude: 48.1351
+
+  # Longitude for weather location (WGS84 decimal degrees)
+  # Default: Munich city center
+  longitude: 11.5820
+
+  # Temperature units
+  # Options: celsius, fahrenheit
+  units: "celsius"
+
+  # Refresh interval for fetching weather data (seconds)
+  # Weather doesn't change rapidly, 15 minutes is reasonable
+  refresh_interval: 900
+
+  # Cache TTL for weather data (seconds)
+  cache_ttl: 900

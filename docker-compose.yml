@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  munich-glance:
+    build: .
+    container_name: munich-glance
+    ports:
+      - "4567:4567"
+    environment:
+      # Server configuration
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=4567
+      - DEBUG=false
+      - TIME_ZONE=Europe/Berlin
+
+      # TRMNL device settings
+      - REFRESH_TIME=120
+      - SETUP_FRIENDLY_ID=munich-glance
+      - SETUP_MESSAGE=MunichGlance Dashboard
+
+      # MVG configuration
+      - MVG_STATION_NAME=Marienplatz
+      - MVG_DEPARTURE_LIMIT=10
+      - MVG_OFFSET_MINUTES=0
+      - MVG_TRANSPORT_TYPES=UBAHN,SBAHN,TRAM,BUS
+
+      # Weather configuration (Munich coordinates)
+      - WEATHER_LAT=48.1351
+      - WEATHER_LON=11.5820
+      - WEATHER_UNITS=celsius
+
+      # Refresh intervals (seconds)
+      - DEPARTURES_REFRESH_INTERVAL=60
+      - WEATHER_REFRESH_INTERVAL=900
+
+      # Display options
+      - SHOW_DELAYS=true
+      - TIME_FORMAT=relative
+      - MAX_MINUTES=60
+
+    volumes:
+      # Persist database and generated images
+      - ./var:/app/var
+      # Mount config file
+      - ./config/app-config.yaml:/app/config/app-config.yaml:ro
+
+    restart: unless-stopped
+
+    # Resource limits (suitable for Raspberry Pi)
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:4567/api/health', timeout=5).raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

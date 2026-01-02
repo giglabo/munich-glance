@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500">
+
+  <!-- Smoke wisps -->
+  <g opacity="0.4" fill="none" stroke="#d4d4d4" stroke-width="2">
+    <path d="M320 180 Q330 160 320 140 Q310 120 320 100 Q330 80 325 60">
+      <animate attributeName="d" 
+        values="M320 180 Q330 160 320 140 Q310 120 320 100 Q330 80 325 60;
+                M325 180 Q315 160 325 140 Q335 120 325 100 Q315 80 320 60;
+                M320 180 Q330 160 320 140 Q310 120 320 100 Q330 80 325 60"
+        dur="3s" repeatCount="indefinite"/>
+    </path>
+    <path d="M330 190 Q345 165 335 145 Q325 125 340 105 Q355 85 345 65" opacity="0.3">
+      <animate attributeName="d" 
+        values="M330 190 Q345 165 335 145 Q325 125 340 105 Q355 85 345 65;
+                M335 190 Q320 165 330 145 Q340 125 325 105 Q310 85 320 65;
+                M330 190 Q345 165 335 145 Q325 125 340 105 Q355 85 345 65"
+        dur="4s" repeatCount="indefinite"/>
+    </path>
+  </g>
+  
+  <!-- Cardinal robe/cape -->
+  <ellipse cx="200" cy="480" rx="140" ry="80" fill="#8B0000"/>
+  <path d="M100 350 Q80 400 60 480 L340 480 Q320 400 300 350 Q250 370 200 370 Q150 370 100 350" fill="#8B0000"/>
+  <path d="M120 360 Q100 410 85 480 L315 480 Q300 410 280 360 Q240 375 200 375 Q160 375 120 360" fill="#a01010"/>
+  
+  <!-- White collar/rabat -->
+  <path d="M150 340 L140 380 L160 420 L200 430 L240 420 L260 380 L250 340" fill="#f5f5f5"/>
+  <path d="M155 345 L147 380 L165 415 L200 423 L235 415 L253 380 L245 345" fill="#ffffff"/>
+  
+  <!-- Cat head - base -->
+  <ellipse cx="200" cy="280" rx="85" ry="75" fill="#4a4a4a"/>
+  
+  <!-- Cat ears -->
+  <path d="M120 220 L105 140 L155 195 Z" fill="#4a4a4a"/>
+  <path d="M280 220 L295 140 L245 195 Z" fill="#4a4a4a"/>
+  <path d="M125 215 L115 155 L150 200 Z" fill="#ff9999"/>
+  <path d="M275 215 L285 155 L250 200 Z" fill="#ff9999"/>
+  
+  <!-- Cardinal biretta (hat) -->
+  <rect x="130" y="160" width="140" height="35" rx="3" fill="#8B0000"/>
+  <rect x="125" y="155" width="150" height="10" rx="2" fill="#6B0000"/>
+  
+  <!-- Hat ridges/wings -->
+  <path d="M130 160 L150 120 L170 160" fill="#8B0000" stroke="#6B0000" stroke-width="1"/>
+  <path d="M170 160 L200 110 L230 160" fill="#8B0000" stroke="#6B0000" stroke-width="1"/>
+  <path d="M230 160 L250 120 L270 160" fill="#8B0000" stroke="#6B0000" stroke-width="1"/>
+  
+  <!-- Pompom on top -->
+  <circle cx="200" cy="105" r="15" fill="#8B0000"/>
+  <circle cx="200" cy="105" r="12" fill="#a01010"/>
+  
+  <!-- Cat face markings -->
+  <ellipse cx="200" cy="300" rx="55" ry="45" fill="#5a5a5a"/>
+  
+  <!-- Eyes -->
+  <ellipse cx="165" cy="270" rx="20" ry="22" fill="#ffdd00"/>
+  <ellipse cx="235" cy="270" rx="20" ry="22" fill="#ffdd00"/>
+  <ellipse cx="165" cy="270" rx="8" ry="18" fill="#111"/>
+  <ellipse cx="235" cy="270" rx="8" ry="18" fill="#111"/>
+  <circle cx="160" cy="265" r="4" fill="#fff" opacity="0.7"/>
+  <circle cx="230" cy="265" r="4" fill="#fff" opacity="0.7"/>
+  
+  <!-- Nose -->
+  <path d="M200 295 L190 310 L210 310 Z" fill="#ff6b6b"/>
+  
+  <!-- Mouth area -->
+  <ellipse cx="185" cy="320" rx="18" ry="12" fill="#5a5a5a"/>
+  <ellipse cx="215" cy="320" rx="18" ry="12" fill="#5a5a5a"/>
+  
+  <!-- Mouth line -->
+  <path d="M200 310 L200 320 Q190 335 180 325" fill="none" stroke="#333" stroke-width="2"/>
+  <path d="M200 320 Q210 335 220 325" fill="none" stroke="#333" stroke-width="2"/>
+  
+  <!-- Whiskers -->
+  <g stroke="#ccc" stroke-width="1.5" fill="none">
+    <line x1="130" y1="300" x2="170" y2="310"/>
+    <line x1="125" y1="315" x2="168" y2="320"/>
+    <line x1="130" y1="330" x2="170" y2="325"/>
+    <line x1="270" y1="300" x2="230" y2="310"/>
+    <line x1="275" y1="315" x2="232" y2="320"/>
+    <line x1="270" y1="330" x2="230" y2="325"/>
+  </g>
+  
+  <!-- Cigar -->
+  <g transform="rotate(-15, 260, 330)">
+    <!-- Cigar body -->
+    <rect x="235" y="320" width="80" height="14" rx="3" fill="#8B4513"/>
+    <rect x="235" y="322" width="80" height="5" fill="#a0522d"/>
+    <!-- Cigar tip/ash -->
+    <rect x="305" y="320" width="15" height="14" rx="2" fill="#888"/>
+    <rect x="315" y="320" width="5" height="14" rx="1" fill="#ff6633"/>
+    <!-- Cigar band -->
+    <rect x="250" y="318" width="15" height="18" rx="1" fill="#daa520"/>
+    <rect x="252" y="320" width="11" height="14" rx="1" fill="#b8860b"/>
+  </g>
+  
+  <!-- Paw holding cigar -->
+  <ellipse cx="250" cy="350" rx="25" ry="20" fill="#4a4a4a"/>
+  <circle cx="238" cy="362" r="8" fill="#3a3a3a"/>
+  <circle cx="252" cy="365" r="8" fill="#3a3a3a"/>
+  <circle cx="265" cy="360" r="7" fill="#3a3a3a"/>
+  
+  <!-- Gold cross pendant -->
+  <g transform="translate(200, 400)">
+    <rect x="-3" y="0" width="6" height="30" fill="#daa520"/>
+    <rect x="-10" y="8" width="20" height="6" fill="#daa520"/>
+    <ellipse cx="0" cy="0" rx="5" ry="5" fill="#daa520"/>
+  </g>
+  <path d="M200 380 L200 395" stroke="#daa520" stroke-width="2" fill="none"/>
+  
+  <!-- Subtle fur texture lines -->
+  <g stroke="#3a3a3a" stroke-width="0.5" opacity="0.5">
+    <path d="M140 260 Q145 265 140 270"/>
+    <path d="M260 260 Q255 265 260 270"/>
+    <path d="M180 340 Q185 345 180 350"/>
+    <path d="M220 340 Q215 345 220 350"/>
+  </g>
+</svg>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MunichGlance Dashboard</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        .preview {
+            text-align: center;
+        }
+
+        .preview img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .preview-controls {
+            margin-top: 1rem;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #0066cc;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: #0055aa;
+        }
+
+        .status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .status-item {
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .status-item label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .status-item .value {
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+
+        .status-item .value.ok {
+            color: #22c55e;
+        }
+
+        .endpoints {
+            list-style: none;
+        }
+
+        .endpoints li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .endpoints li:last-child {
+            border-bottom: none;
+        }
+
+        .endpoints code {
+            background: #f0f0f0;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.9rem;
+        }
+
+        .endpoints .method {
+            display: inline-block;
+            width: 50px;
+            font-weight: 500;
+            color: #0066cc;
+        }
+
+        footer {
+            text-align: center;
+            color: #999;
+            font-size: 0.85rem;
+            margin-top: 2rem;
+        }
+
+        footer a {
+            color: #666;
+        }
+
+        #refresh-time {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MunichGlance</h1>
+            <p class="subtitle">Munich Transit & Weather for TRMNL</p>
+        </header>
+
+        <div class="card preview">
+            <h2>Current Display</h2>
+            <img id="display-image" src="/image/grayscale.png" alt="Current display" />
+            <div class="preview-controls">
+                <button class="btn" onclick="refreshImage()">Refresh Preview</button>
+                <a class="btn" href="/image/screen.bmp" download>Download BMP</a>
+            </div>
+            <div id="refresh-time">Last refreshed: --</div>
+        </div>
+
+        <div class="card">
+            <h2>Status</h2>
+            <div class="status" id="status-container">
+                <div class="status-item">
+                    <label>Server</label>
+                    <div class="value ok" id="status-server">Loading...</div>
+                </div>
+                <div class="status-item">
+                    <label>Primary Plugin</label>
+                    <div class="value" id="status-plugin">--</div>
+                </div>
+                <div class="status-item">
+                    <label>Refresh Rate</label>
+                    <div class="value" id="status-refresh">--</div>
+                </div>
+                <div class="status-item">
+                    <label>Station</label>
+                    <div class="value" id="status-station">--</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>API Endpoints</h2>
+            <ul class="endpoints">
+                <li><span class="method">GET</span> <code>/api/display</code> - Get display image for TRMNL</li>
+                <li><span class="method">POST</span> <code>/api/log</code> - Device event logging</li>
+                <li><span class="method">POST</span> <code>/api/battery</code> - Battery telemetry</li>
+                <li><span class="method">GET</span> <code>/api/health</code> - Health check</li>
+                <li><span class="method">GET</span> <code>/settings</code> - Current configuration</li>
+                <li><span class="method">GET</span> <code>/settings/plugins</code> - List plugins</li>
+                <li><span class="method">GET</span> <code>/docs</code> - OpenAPI documentation</li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>
+                <a href="https://github.com/usetrmnl/byos_fastapi">TRMNL BYOS</a> |
+                <a href="/docs">API Docs</a> |
+                <a href="/settings">Settings</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let imageToggle = false;
+
+        function refreshImage() {
+            const img = document.getElementById('display-image');
+            // Alternate between two URLs for reliable cache busting
+            imageToggle = !imageToggle;
+            const url = imageToggle ? '/image/grayscale1.png' : '/image/grayscale.png';
+            img.src = url + '?' + Date.now();
+            document.getElementById('refresh-time').textContent =
+                'Last refreshed: ' + new Date().toLocaleTimeString();
+        }
+
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+
+                document.getElementById('status-server').textContent =
+                    data.status === 'ok' ? 'Online' : 'Error';
+                document.getElementById('status-plugin').textContent =
+                    data.primary_plugin || 'None';
+            } catch (e) {
+                document.getElementById('status-server').textContent = 'Offline';
+                document.getElementById('status-server').classList.remove('ok');
+            }
+
+            try {
+                const response = await fetch('/settings');
+                const settings = await response.json();
+
+                document.getElementById('status-refresh').textContent =
+                    settings.refresh_time + 's';
+            } catch (e) {
+                console.error('Failed to load settings', e);
+            }
+        }
+
+        // Load status on page load
+        loadStatus();
+
+        // Auto-refresh image every 2 minutes
+        setInterval(refreshImage, 120000);
+    </script>
+</body>
+</html>
