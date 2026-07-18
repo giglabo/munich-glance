@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6-dev \
     libjpeg-dev \
     libpng-dev \
-    fonts-dejavu-core \
+    fonts-dejavu \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy source files for installation
@@ -16,14 +16,14 @@ COPY trmnl_server/ trmnl_server/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir .
-COPY assets/ assets/
 COPY web/ web/
 
 # Create runtime directories
 RUN mkdir -p var/db var/generated
 
-# Copy system fonts to assets if not present
-RUN cp -n /usr/share/fonts/truetype/dejavu/DejaVuSans*.ttf assets/fonts/ 2>/dev/null || true
+# Populate fonts from the apt-installed DejaVu set (assets/ is not tracked in
+# git, so it must be built here rather than COPYed from the build context).
+RUN mkdir -p assets/fonts && cp /usr/share/fonts/truetype/dejavu/*.ttf assets/fonts/
 
 # Create non-root user
 RUN useradd -m -u 1000 trmnl && \
