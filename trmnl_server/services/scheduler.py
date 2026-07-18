@@ -2,8 +2,7 @@
 
 import asyncio
 import logging
-from datetime import datetime
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -11,7 +10,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 logger = logging.getLogger(__name__)
 
 # Global scheduler instance
-_scheduler: Optional[AsyncIOScheduler] = None
+_scheduler: AsyncIOScheduler | None = None
 
 
 def get_scheduler() -> AsyncIOScheduler:
@@ -116,7 +115,7 @@ def remove_plugin_job(plugin_name: str) -> bool:
     return False
 
 
-def get_job_status(plugin_name: str) -> Optional[dict]:
+def get_job_status(plugin_name: str) -> dict | None:
     """Get status of a plugin job.
 
     Args:
@@ -150,11 +149,13 @@ def list_jobs() -> list[dict]:
     jobs = []
 
     for job in scheduler.get_jobs():
-        jobs.append({
-            "id": job.id,
-            "name": job.name,
-            "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
-            "trigger": str(job.trigger),
-        })
+        jobs.append(
+            {
+                "id": job.id,
+                "name": job.name,
+                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
+                "trigger": str(job.trigger),
+            }
+        )
 
     return jobs

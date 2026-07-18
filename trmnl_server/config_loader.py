@@ -57,9 +57,7 @@ class ConfigLoader:
             config_file = self._resolve_config_path(config_file_param)
 
             if not config_file or not Path(config_file).exists():
-                self._logger.warning(
-                    f"Config file not found: {config_file}. Using defaults."
-                )
+                self._logger.warning(f"Config file not found: {config_file}. Using defaults.")
                 return
 
             self._config_file_path = config_file

@@ -3,7 +3,6 @@
 import logging
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 
@@ -22,9 +21,9 @@ class WeatherData:
     is_day: bool  # True if daytime
 
     # Optional additional data
-    humidity: Optional[float] = None
-    wind_speed: Optional[float] = None
-    precipitation: Optional[float] = None
+    humidity: float | None = None
+    wind_speed: float | None = None
+    precipitation: float | None = None
 
     # Metadata
     fetched_at: float = 0.0  # Unix timestamp when fetched
@@ -64,17 +63,17 @@ class WeatherClient:
 
     API_URL = "https://api.open-meteo.com/v1/forecast"
 
-    def __init__(self, config: Optional[MunichGlanceConfig] = None):
+    def __init__(self, config: MunichGlanceConfig | None = None):
         """Initialize weather client.
 
         Args:
             config: Plugin configuration (uses global if not provided)
         """
         self.config = config or get_plugin_config()
-        self._cache: Optional[WeatherData] = None
+        self._cache: WeatherData | None = None
         self._cache_time: float = 0.0
 
-    async def get_weather(self) -> Optional[WeatherData]:
+    async def get_weather(self) -> WeatherData | None:
         """Fetch current weather with caching.
 
         Returns:
@@ -104,7 +103,7 @@ class WeatherClient:
 
         return None
 
-    async def _fetch_weather(self) -> Optional[WeatherData]:
+    async def _fetch_weather(self) -> WeatherData | None:
         """Make API request to Open-Meteo.
 
         Returns:
@@ -162,7 +161,7 @@ class WeatherClient:
         self._cache_time = 0.0
 
     @property
-    def cache_age(self) -> Optional[float]:
+    def cache_age(self) -> float | None:
         """Get age of cache in seconds."""
         if self._cache_time > 0:
             return time.time() - self._cache_time

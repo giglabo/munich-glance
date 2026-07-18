@@ -6,7 +6,6 @@ import logging
 import pkgutil
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Type
 
 from trmnl_server.config import get_config
 from trmnl_server.plugins.base import PluginBase, PluginOutput
@@ -21,10 +20,10 @@ _registry: dict[str, PluginBase] = {}
 _output_cache: dict[str, tuple[PluginOutput, datetime]] = {}
 
 # Primary plugin
-_primary_plugin: Optional[str] = None
+_primary_plugin: str | None = None
 
 
-def discover_plugins() -> list[Type[PluginBase]]:
+def discover_plugins() -> list[type[PluginBase]]:
     """Discover all plugins in the plugins package.
 
     Returns:
@@ -36,7 +35,7 @@ def discover_plugins() -> list[Type[PluginBase]]:
     plugins_path = Path(plugins_pkg.__file__).parent
 
     # Walk through all modules in plugins package
-    for finder, name, is_pkg in pkgutil.walk_packages([str(plugins_path)]):
+    for _finder, name, _is_pkg in pkgutil.walk_packages([str(plugins_path)]):
         if name == "base":
             continue
 
@@ -72,7 +71,7 @@ def register_plugins() -> dict[str, PluginBase]:
     Returns:
         Dict of plugin name to instance
     """
-    global _registry, _primary_plugin
+    global _primary_plugin
 
     _registry.clear()
     _primary_plugin = None
@@ -104,19 +103,19 @@ def get_registry() -> dict[str, PluginBase]:
     return _registry
 
 
-def get_plugin(name: str) -> Optional[PluginBase]:
+def get_plugin(name: str) -> PluginBase | None:
     """Get a plugin by name."""
     return _registry.get(name)
 
 
-def get_primary_plugin() -> Optional[PluginBase]:
+def get_primary_plugin() -> PluginBase | None:
     """Get the primary plugin instance."""
     if _primary_plugin:
         return _registry.get(_primary_plugin)
     return None
 
 
-def get_primary_plugin_name() -> Optional[str]:
+def get_primary_plugin_name() -> str | None:
     """Get the primary plugin name."""
     return _primary_plugin
 
@@ -138,7 +137,7 @@ def set_primary_plugin(name: str) -> bool:
     return False
 
 
-async def run_plugin(name: str, **kwargs) -> Optional[PluginOutput]:
+async def run_plugin(name: str, **kwargs) -> PluginOutput | None:
     """Run a plugin and cache its output.
 
     Args:
@@ -188,7 +187,7 @@ async def run_plugin(name: str, **kwargs) -> Optional[PluginOutput]:
         return PluginOutput(error=str(e), plugin_name=name)
 
 
-def get_cached_output(name: str) -> Optional[PluginOutput]:
+def get_cached_output(name: str) -> PluginOutput | None:
     """Get cached output for a plugin.
 
     Args:
@@ -203,7 +202,7 @@ def get_cached_output(name: str) -> Optional[PluginOutput]:
     return None
 
 
-def get_cache_age(name: str) -> Optional[float]:
+def get_cache_age(name: str) -> float | None:
     """Get age of cached output in seconds.
 
     Args:
@@ -238,7 +237,7 @@ def is_cache_valid(name: str) -> bool:
     return age < plugin.get_content_ttl()
 
 
-async def refresh_plugin(name: str) -> Optional[PluginOutput]:
+async def refresh_plugin(name: str) -> PluginOutput | None:
     """Refresh a plugin's output (for scheduler callback).
 
     Args:
@@ -278,15 +277,17 @@ def list_plugins() -> list[dict]:
     for name, plugin in _registry.items():
         cache_age = get_cache_age(name)
 
-        plugins.append({
-            "name": name,
-            "display_name": plugin.display_name,
-            "is_primary": name == _primary_plugin,
-            "refresh_interval": plugin.get_content_ttl(),
-            "registry_order": plugin.REGISTRY_ORDER,
-            "has_cache": name in _output_cache,
-            "cache_age": round(cache_age, 1) if cache_age else None,
-            "cache_valid": is_cache_valid(name),
-        })
+        plugins.append(
+            {
+                "name": name,
+                "display_name": plugin.display_name,
+                "is_primary": name == _primary_plugin,
+                "refresh_interval": plugin.get_content_ttl(),
+                "registry_order": plugin.REGISTRY_ORDER,
+                "has_cache": name in _output_cache,
+                "cache_age": round(cache_age, 1) if cache_age else None,
+                "cache_valid": is_cache_valid(name),
+            }
+        )
 
     return plugins

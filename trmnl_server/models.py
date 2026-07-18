@@ -1,7 +1,6 @@
 """SQLAlchemy models for TRMNL BYOS server."""
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -16,17 +15,17 @@ class Device(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     mac_address: Mapped[str] = mapped_column(String(17), unique=True, nullable=False)
-    friendly_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    api_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    firmware_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    friendly_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    api_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    firmware_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # Display settings
     refresh_rate: Mapped[int] = mapped_column(Integer, default=120)
-    current_plugin: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    current_plugin: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    last_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_seen: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
@@ -47,13 +46,13 @@ class DeviceLog(Base):
 
     # Log data
     log_type: Mapped[str] = mapped_column(String(32), nullable=False)  # display, sleep, wake, etc.
-    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Device state at log time
-    firmware_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    wifi_rssi: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    battery_voltage: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    free_heap: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    firmware_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    wifi_rssi: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    battery_voltage: Mapped[float | None] = mapped_column(Float, nullable=True)
+    free_heap: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Timestamp
     created_at: Mapped[datetime] = mapped_column(
@@ -71,7 +70,7 @@ class BatteryReading(Base):
 
     # Readings
     voltage: Mapped[float] = mapped_column(Float, nullable=False)
-    rssi: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    rssi: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Timestamp
     created_at: Mapped[datetime] = mapped_column(
@@ -89,7 +88,7 @@ class ConfigEntry(Base):
     value: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Metadata
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
@@ -110,13 +109,13 @@ class PluginState(Base):
 
     # State
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    last_run: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    last_success: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    last_run: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_success: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Output info
-    current_image: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
-    image_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    current_image: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    image_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

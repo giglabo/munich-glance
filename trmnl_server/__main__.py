@@ -1,7 +1,5 @@
 """CLI entry point for TRMNL BYOS server."""
 
-import sys
-
 
 def main():
     """Run the TRMNL BYOS server."""

@@ -3,7 +3,6 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
@@ -63,8 +62,8 @@ class MunichGlanceRenderer:
 
     def __init__(
         self,
-        config: Optional[MunichGlanceConfig] = None,
-        fonts_dir: Optional[Path] = None,
+        config: MunichGlanceConfig | None = None,
+        fonts_dir: Path | None = None,
     ):
         """Initialize renderer.
 
@@ -73,7 +72,9 @@ class MunichGlanceRenderer:
             fonts_dir: Directory containing font files
         """
         self.config = config or get_plugin_config()
-        self.fonts_dir = fonts_dir or Path(__file__).parent.parent.parent.parent / "assets" / "fonts"
+        self.fonts_dir = (
+            fonts_dir or Path(__file__).parent.parent.parent.parent / "assets" / "fonts"
+        )
         self._fonts: dict[str, ImageFont.FreeTypeFont] = {}
         self._tz = ZoneInfo(self.config.timezone)
         self._load_fonts()
@@ -123,7 +124,11 @@ class MunichGlanceRenderer:
             ("minutes_small", int((self.FONT_MINUTES - 2) * scale), False),
             ("delay", int(self.FONT_DELAY * scale), False),
             ("group_header", int(self.FONT_GROUP_HEADER * scale), False),
-            ("direction_header", int(self.FONT_GROUP_HEADER * scale), True),  # Bold for direction headers
+            (
+                "direction_header",
+                int(self.FONT_GROUP_HEADER * scale),
+                True,
+            ),  # Bold for direction headers
         ]
 
         for name, size, use_bold in font_specs:
@@ -144,10 +149,10 @@ class MunichGlanceRenderer:
 
     def render(
         self,
-        weather: Optional[WeatherData],
+        weather: WeatherData | None,
         departures: list[Departure],
         station_name: str = "",
-        errors: Optional[list[str]] = None,
+        errors: list[str] | None = None,
     ) -> Image.Image:
         """Generate complete display image.
 
@@ -182,7 +187,7 @@ class MunichGlanceRenderer:
 
         return img
 
-    def _draw_weather_box(self, draw: ImageDraw.Draw, weather: Optional[WeatherData]) -> None:
+    def _draw_weather_box(self, draw: ImageDraw.Draw, weather: WeatherData | None) -> None:
         """Draw weather section in top-left corner."""
         x = self.WEATHER_MARGIN
         y = self.WEATHER_MARGIN
@@ -278,8 +283,6 @@ class MunichGlanceRenderer:
 
     def _draw_departures(self, draw: ImageDraw.Draw, departures: list[Departure]) -> None:
         """Draw the departures list."""
-        y = self.DEPARTURE_START_Y
-
         if not departures:
             # No departures message
             draw.text(
@@ -324,6 +327,7 @@ class MunichGlanceRenderer:
         # This allows Bus 53 (bidirectional) and Bus 134 (unidirectional) at same station
         # to be displayed correctly
         from collections import OrderedDict
+
         groups: OrderedDict[str, list[Departure]] = OrderedDict()
         for dep in departures:
             station = dep.station_name or "Unknown"
@@ -385,8 +389,14 @@ class MunichGlanceRenderer:
                         time_parts = [d.format_time(self.config.time_format) for d in limited_deps]
                         combined_time = " / ".join(time_parts)
                         self._draw_departure_row_compact(
-                            draw, line_deps[0], self.DEPARTURE_PADDING + 10, y,
-                            self.WIDTH - 40, None, combined_time, show_destination=True
+                            draw,
+                            line_deps[0],
+                            self.DEPARTURE_PADDING + 10,
+                            y,
+                            self.WIDTH - 40,
+                            None,
+                            combined_time,
+                            show_destination=True,
                         )
                         y += row_height
                 elif len(line_deps) <= 2:
@@ -407,8 +417,14 @@ class MunichGlanceRenderer:
                         rest_times = [d.format_time(self.config.time_format) for d in rest_deps]
                         combined_time = " / ".join(rest_times)
                         self._draw_departure_row_compact(
-                            draw, line_deps[1], self.DEPARTURE_PADDING + 10, y,
-                            self.WIDTH - 40, None, combined_time, show_destination=True
+                            draw,
+                            line_deps[1],
+                            self.DEPARTURE_PADDING + 10,
+                            y,
+                            self.WIDTH - 40,
+                            None,
+                            combined_time,
+                            show_destination=True,
                         )
                         y += row_height
 
@@ -417,7 +433,7 @@ class MunichGlanceRenderer:
 
     def _get_bidirectional_groups(
         self, departures: list[Departure]
-    ) -> Optional[dict[str, list[tuple[Departure, Optional[str]]]]]:
+    ) -> dict[str, list[tuple[Departure, str | None]]] | None:
         """Check if departures have bidirectional pattern and group them.
 
         Returns dict with direction as key if bidirectional (2+ destinations), None otherwise.
@@ -440,7 +456,7 @@ class MunichGlanceRenderer:
 
         # If exactly 2 destinations, simple case - no partial routes
         if len(by_destination) == 2:
-            result: dict[str, list[tuple[Departure, Optional[str]]]] = {}
+            result: dict[str, list[tuple[Departure, str | None]]] = {}
             for dest, deps in by_destination.items():
                 result[dest] = [(d, None) for d in deps]
             return result
@@ -450,14 +466,14 @@ class MunichGlanceRenderer:
         sorted_dests = sorted(
             by_destination.keys(),
             key=lambda d: (len(by_destination[d]), len(d)),  # frequency, then name length
-            reverse=True
+            reverse=True,
         )
         main_dir_1 = sorted_dests[0]
         main_dir_2 = sorted_dests[1]
         partial_dests = sorted_dests[2:]
 
         # Build result with main directions
-        result: dict[str, list[tuple[Departure, Optional[str]]]] = {
+        result: dict[str, list[tuple[Departure, str | None]]] = {
             main_dir_1: [(d, None) for d in by_destination[main_dir_1]],
             main_dir_2: [(d, None) for d in by_destination[main_dir_2]],
         }
@@ -479,7 +495,7 @@ class MunichGlanceRenderer:
     def _draw_bidirectional_columns(
         self,
         draw: ImageDraw.Draw,
-        directions: dict[str, list[tuple[Departure, Optional[str]]]],
+        directions: dict[str, list[tuple[Departure, str | None]]],
         start_y: int,
         row_height: int,
     ) -> int:
@@ -550,8 +566,8 @@ class MunichGlanceRenderer:
         return y
 
     def _prepare_column_rows(
-        self, deps: list[tuple[Departure, Optional[str]]], max_rows: int = 2
-    ) -> list[tuple[Departure, str, Optional[str]]]:
+        self, deps: list[tuple[Departure, str | None]], max_rows: int = 2
+    ) -> list[tuple[Departure, str, str | None]]:
         """Prepare column rows for bidirectional display.
 
         Returns list of (departure, time_string, partial_label) tuples.
@@ -581,10 +597,7 @@ class MunichGlanceRenderer:
         # Standard mode: up to max_rows
         if len(deps) <= max_rows:
             # Each departure gets its own row
-            return [
-                (dep, dep.format_time(self.config.time_format), label)
-                for dep, label in deps
-            ]
+            return [(dep, dep.format_time(self.config.time_format), label) for dep, label in deps]
 
         # More departures than max_rows: first (max_rows-1) get own rows, rest combined
         # Limit to 3 total departures per direction
@@ -596,7 +609,7 @@ class MunichGlanceRenderer:
             result.append((dep, dep.format_time(self.config.time_format), label))
 
         # Rest are combined on the last row (max 2 more for 3 total)
-        rest_deps = deps[max_rows - 1:max_rows + 1]  # Limit to 2 more
+        rest_deps = deps[max_rows - 1 : max_rows + 1]  # Limit to 2 more
         rest_parts = []
         for dep, label in rest_deps:
             time_str = dep.format_time(self.config.time_format)
@@ -616,8 +629,8 @@ class MunichGlanceRenderer:
         x: int,
         y: int,
         max_width: int,
-        partial_label: Optional[str] = None,
-        time_override: Optional[str] = None,
+        partial_label: str | None = None,
+        time_override: str | None = None,
         show_destination: bool = False,
     ) -> None:
         """Draw a compact departure row for column layout (badge + time, optional partial label).

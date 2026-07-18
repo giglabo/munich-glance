@@ -3,7 +3,6 @@
 import logging
 from dataclasses import dataclass, field
 from datetime import time
-from typing import Optional
 
 from trmnl_server.config_loader import get_config_loader
 
@@ -129,13 +128,13 @@ class RefreshSchedule:
     default: int = 300  # Global fallback: 5 minutes
 
     # Day-specific schedules
-    mon: Optional[DaySchedule] = None
-    tue: Optional[DaySchedule] = None
-    wed: Optional[DaySchedule] = None
-    thu: Optional[DaySchedule] = None
-    fri: Optional[DaySchedule] = None
-    sat: Optional[DaySchedule] = None
-    sun: Optional[DaySchedule] = None
+    mon: DaySchedule | None = None
+    tue: DaySchedule | None = None
+    wed: DaySchedule | None = None
+    thu: DaySchedule | None = None
+    fri: DaySchedule | None = None
+    sat: DaySchedule | None = None
+    sun: DaySchedule | None = None
 
     def get_refresh_rate(self, weekday: int, current_time: time) -> int:
         """Get refresh rate for given weekday and time.
@@ -190,15 +189,15 @@ class DepartureFilter:
     """Filter for specific line/direction combinations."""
 
     type: str  # Transport type: UBAHN, SBAHN, TRAM, BUS
-    line: Optional[str] = None  # Line name (e.g., "U3", "53") or None for all
-    direction: Optional[str] = None  # Destination, "auto", or None
+    line: str | None = None  # Line name (e.g., "U3", "53") or None for all
+    direction: str | None = None  # Destination, "auto", or None
 
     def matches(
         self,
         transport_type: str,
         line: str,
         destination: str,
-        opposite_direction: Optional[str] = None,
+        opposite_direction: str | None = None,
     ) -> bool:
         """Check if a departure matches this filter.
 
@@ -267,7 +266,7 @@ class StationConfig:
             filters=filters,
         )
 
-    def get_opposite_direction(self, line: str) -> Optional[str]:
+    def get_opposite_direction(self, line: str) -> str | None:
         """Find the opposite direction for a line with 'auto' filter.
 
         Looks for an explicit direction filter for the same line.
@@ -324,7 +323,7 @@ class MunichGlanceConfig:
 
     # Multi-Station Configuration
     display_station: str = "Munich"  # Name shown in display header
-    multi_station: Optional[MultiStationConfig] = None  # Multi-station config
+    multi_station: MultiStationConfig | None = None  # Multi-station config
 
     # MVG Shared Settings
     departure_limit: int = 10
@@ -337,7 +336,7 @@ class MunichGlanceConfig:
     weather_units: str = "celsius"  # celsius or fahrenheit
 
     # Refresh Schedule
-    refresh_schedule: Optional[RefreshSchedule] = None  # Time-based refresh
+    refresh_schedule: RefreshSchedule | None = None  # Time-based refresh
     departures_refresh_interval: int = 60  # Fallback refresh (seconds)
     weather_refresh_interval: int = 900  # 15 minutes
 
@@ -350,7 +349,9 @@ class MunichGlanceConfig:
     show_platform: bool = False
     show_cancelled: bool = True
     show_groups: bool = True  # Show station headers when grouping departures
-    compact_directions: bool = False  # Show all times for each direction on one row (e.g., "5 min / 7 min")
+    compact_directions: bool = (
+        False  # Show all times for each direction on one row (e.g., "5 min / 7 min")
+    )
     time_format: str = "relative"  # relative (5 min) or absolute (14:32)
     font_scale: float = 1.0  # Scale factor for fonts (0.8 = smaller, 1.2 = larger)
     timezone: str = "Europe/Berlin"  # Timezone for displaying times
@@ -399,7 +400,7 @@ class MunichGlanceConfig:
 
 
 # Global config instance
-_config: Optional[MunichGlanceConfig] = None
+_config: MunichGlanceConfig | None = None
 
 
 def get_plugin_config(config_file: str | None = None) -> MunichGlanceConfig:

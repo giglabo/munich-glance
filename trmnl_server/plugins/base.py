@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 from PIL import Image
@@ -19,11 +18,11 @@ class PluginOutput:
     """Result from plugin execution."""
 
     # Image paths
-    bmp_path: Optional[Path] = None
-    png_path: Optional[Path] = None
+    bmp_path: Path | None = None
+    png_path: Path | None = None
 
     # Image data (alternative to paths)
-    image: Optional[Image.Image] = None
+    image: Image.Image | None = None
 
     # Metadata
     plugin_name: str = ""
@@ -31,7 +30,7 @@ class PluginOutput:
     content_hash: str = ""
 
     # Error state
-    error: Optional[str] = None
+    error: str | None = None
     is_cached: bool = False
 
     def has_image(self) -> bool:
@@ -59,7 +58,7 @@ class PluginBase(ABC):
     REFRESH_INTERVAL: int = 120  # seconds
 
     # Output settings
-    OUTPUT_SUBDIR: Optional[str] = None  # Subdirectory in generated/
+    OUTPUT_SUBDIR: str | None = None  # Subdirectory in generated/
 
     # Display settings
     WIDTH: int = 800
@@ -80,7 +79,7 @@ class PluginBase(ABC):
         return self.DISPLAY_NAME
 
     @abstractmethod
-    async def run(self, **kwargs) -> Optional[PluginOutput]:
+    async def run(self, **kwargs) -> PluginOutput | None:
         """Execute plugin logic and generate output.
 
         Args:
@@ -140,31 +139,29 @@ class PluginBase(ABC):
             1-bit image (mode "1")
         """
         # 4x4 Bayer matrix (normalized to 0-255 range)
-        bayer_matrix = np.array([
-            [0, 8, 2, 10],
-            [12, 4, 14, 6],
-            [3, 11, 1, 9],
-            [15, 7, 13, 5],
-        ], dtype=np.float32) * (255 / 16)
+        bayer_matrix = np.array(
+            [
+                [0, 8, 2, 10],
+                [12, 4, 14, 6],
+                [3, 11, 1, 9],
+                [15, 7, 13, 5],
+            ],
+            dtype=np.float32,
+        ) * (255 / 16)
 
         # Convert image to numpy array
         img_array = np.array(image, dtype=np.float32)
 
         # Tile the Bayer matrix to match image dimensions
         height, width = img_array.shape
-        tiled_matrix = np.tile(
-            bayer_matrix,
-            (height // 4 + 1, width // 4 + 1)
-        )[:height, :width]
+        tiled_matrix = np.tile(bayer_matrix, (height // 4 + 1, width // 4 + 1))[:height, :width]
 
         # Apply threshold: pixel > threshold becomes white
         result = (img_array > tiled_matrix).astype(np.uint8) * 255
 
         return Image.fromarray(result, mode="L").convert("1")
 
-    def _convert_to_1bit(
-        self, image: Image.Image, dithering_mode: str = "none"
-    ) -> Image.Image:
+    def _convert_to_1bit(self, image: Image.Image, dithering_mode: str = "none") -> Image.Image:
         """Convert grayscale image to 1-bit with specified dithering.
 
         Args:
@@ -217,9 +214,7 @@ class PluginBase(ABC):
         bmp_path = output_dir / f"{filename_base}.bmp"
         bmp_image.save(bmp_path, "BMP")
 
-        self._logger.debug(
-            f"Saved assets: {bmp_path}, {png_path} (dithering: {dithering_mode})"
-        )
+        self._logger.debug(f"Saved assets: {bmp_path}, {png_path} (dithering: {dithering_mode})")
 
         return PluginOutput(
             bmp_path=bmp_path,
@@ -277,7 +272,7 @@ class PluginBase(ABC):
             pass
 
         # Fall back to default font
-        logger.warning(f"No TrueType font found, using default bitmap font")
+        logger.warning("No TrueType font found, using default bitmap font")
         return ImageFont.load_default()
 
     def __repr__(self) -> str:

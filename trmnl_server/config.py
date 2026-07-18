@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -116,7 +115,7 @@ class ServerConfig:
 
 
 # Global config instance
-_config: Optional[ServerConfig] = None
+_config: ServerConfig | None = None
 
 
 def get_config(config_file: str | None = None) -> ServerConfig:

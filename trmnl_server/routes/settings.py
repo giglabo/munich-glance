@@ -1,7 +1,6 @@
 """Settings management endpoints."""
 
 import logging
-from typing import Any, Optional
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -38,7 +37,7 @@ class SettingsResponse(BaseModel):
     timezone: str
 
     # Plugin info
-    primary_plugin: Optional[str]
+    primary_plugin: str | None
     plugins: list[dict]
     jobs: list[dict]
 
@@ -46,12 +45,12 @@ class SettingsResponse(BaseModel):
 class SettingsUpdateRequest(BaseModel):
     """Settings update request."""
 
-    refresh_time: Optional[int] = None
-    setup_friendly_id: Optional[str] = None
-    setup_message: Optional[str] = None
-    dithering_mode: Optional[str] = None
-    timezone: Optional[str] = None
-    primary_plugin: Optional[str] = None
+    refresh_time: int | None = None
+    setup_friendly_id: str | None = None
+    setup_message: str | None = None
+    dithering_mode: str | None = None
+    timezone: str | None = None
+    primary_plugin: str | None = None
 
 
 class SettingsUpdateResponse(BaseModel):
@@ -66,7 +65,7 @@ class PluginListResponse(BaseModel):
     """List of registered plugins."""
 
     plugins: list[dict]
-    primary: Optional[str]
+    primary: str | None
 
 
 @router.get("", response_model=SettingsResponse)
@@ -111,9 +110,7 @@ async def update_settings(updates: SettingsUpdateRequest) -> SettingsUpdateRespo
                     continue
 
                 # Persist to database
-                result = await session.execute(
-                    select(ConfigEntry).where(ConfigEntry.key == field)
-                )
+                result = await session.execute(select(ConfigEntry).where(ConfigEntry.key == field))
                 entry = result.scalar_one_or_none()
 
                 if entry:
@@ -168,9 +165,7 @@ async def get_config_entry(key: str) -> dict:
         async with get_session() as session:
             from sqlalchemy import select
 
-            result = await session.execute(
-                select(ConfigEntry).where(ConfigEntry.key == key)
-            )
+            result = await session.execute(select(ConfigEntry).where(ConfigEntry.key == key))
             entry = result.scalar_one_or_none()
 
             if entry:
@@ -188,15 +183,13 @@ async def get_config_entry(key: str) -> dict:
 
 
 @router.put("/config/{key}")
-async def set_config_entry(key: str, value: str, description: Optional[str] = None) -> dict:
+async def set_config_entry(key: str, value: str, description: str | None = None) -> dict:
     """Set a config entry in the database."""
     try:
         async with get_session() as session:
             from sqlalchemy import select
 
-            result = await session.execute(
-                select(ConfigEntry).where(ConfigEntry.key == key)
-            )
+            result = await session.execute(select(ConfigEntry).where(ConfigEntry.key == key))
             entry = result.scalar_one_or_none()
 
             if entry:

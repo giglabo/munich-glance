@@ -3,11 +3,10 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional
 
 from trmnl_server.config import get_config
 from trmnl_server.plugins.base import PluginBase, PluginOutput
-from trmnl_server.plugins.munichglance.config import MunichGlanceConfig, get_plugin_config
+from trmnl_server.plugins.munichglance.config import get_plugin_config
 from trmnl_server.plugins.munichglance.departures import MultiStationClient
 from trmnl_server.plugins.munichglance.renderer import MunichGlanceRenderer
 from trmnl_server.plugins.munichglance.weather import WeatherClient
@@ -47,15 +46,15 @@ class MunichGlancePlugin(PluginBase):
             fonts_dir=get_config().fonts_dir,
         )
 
-        logger.info(
-            f"MunichGlance plugin initialized for: {self.plugin_config.display_station}"
-        )
+        logger.info(f"MunichGlance plugin initialized for: {self.plugin_config.display_station}")
         logger.info(f"Multi-station config present: {self.plugin_config.multi_station is not None}")
         if self.plugin_config.multi_station:
-            logger.info(f"Configured stations: {[s.station for s in self.plugin_config.multi_station.stations]}")
+            logger.info(
+                f"Configured stations: {[s.station for s in self.plugin_config.multi_station.stations]}"
+            )
 
     @property
-    def REFRESH_INTERVAL(self) -> int:
+    def REFRESH_INTERVAL(self) -> int:  # noqa: N802  (overrides uppercase base-class constant)
         """Dynamic refresh interval from config."""
         return self.plugin_config.departures_refresh_interval
 
@@ -81,7 +80,7 @@ class MunichGlancePlugin(PluginBase):
             current_time=now.time(),
         )
 
-    async def run(self, **kwargs) -> Optional[PluginOutput]:
+    async def run(self, **kwargs) -> PluginOutput | None:
         """Execute plugin: fetch data and generate display image.
 
         Args:
@@ -152,8 +151,7 @@ class MunichGlancePlugin(PluginBase):
 
             if weather:
                 logger.info(
-                    f"Generated image: {weather.temperature}°C, "
-                    f"{len(departures)} departures"
+                    f"Generated image: {weather.temperature}°C, {len(departures)} departures"
                 )
             else:
                 logger.info(f"Generated image: no weather, {len(departures)} departures")
@@ -164,7 +162,7 @@ class MunichGlancePlugin(PluginBase):
             logger.exception(f"Error saving assets: {e}")
             return PluginOutput(error=str(e), plugin_name=self.BASENAME)
 
-    async def refresh(self) -> Optional[PluginOutput]:
+    async def refresh(self) -> PluginOutput | None:
         """Convenience method to refresh plugin output."""
         server_config = get_config()
         output_dir = self.get_output_dir(server_config.generated_dir)

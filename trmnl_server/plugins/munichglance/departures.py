@@ -5,7 +5,6 @@ import logging
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 from trmnl_server.plugins.munichglance.config import (
     MunichGlanceConfig,
@@ -27,9 +26,9 @@ class Departure:
     delay: int  # Delay in minutes (0 if on time)
     transport_type: str  # Transport type (e.g., "UBAHN", "SBAHN")
     cancelled: bool  # True if cancelled
-    platform: Optional[str] = None  # Platform/track if available
+    platform: str | None = None  # Platform/track if available
     messages: list[str] = None  # Service messages
-    station_name: Optional[str] = None  # Source station name (for grouping)
+    station_name: str | None = None  # Source station name (for grouping)
 
     def __post_init__(self):
         if self.messages is None:
@@ -88,16 +87,16 @@ class Departure:
 class DeparturesClient:
     """Async client for MVG departures API."""
 
-    def __init__(self, config: Optional[MunichGlanceConfig] = None):
+    def __init__(self, config: MunichGlanceConfig | None = None):
         """Initialize departures client.
 
         Args:
             config: Plugin configuration (uses global if not provided)
         """
         self.config = config or get_plugin_config()
-        self._station_id: Optional[str] = None
-        self._station_name: Optional[str] = None
-        self._cache: Optional[list[Departure]] = None
+        self._station_id: str | None = None
+        self._station_name: str | None = None
+        self._cache: list[Departure] | None = None
         self._cache_time: float = 0.0
 
     async def get_departures(self) -> list[Departure]:
@@ -129,7 +128,7 @@ class DeparturesClient:
 
             return []
 
-    async def _resolve_station(self) -> Optional[str]:
+    async def _resolve_station(self) -> str | None:
         """Resolve station name to ID.
 
         Returns:
@@ -247,7 +246,7 @@ class DeparturesClient:
         self._cache_time = 0.0
 
     @property
-    def cache_age(self) -> Optional[float]:
+    def cache_age(self) -> float | None:
         """Get age of cache in seconds."""
         if self._cache_time > 0:
             return time.time() - self._cache_time
@@ -257,14 +256,14 @@ class DeparturesClient:
 class MultiStationClient:
     """Client for fetching departures from multiple stations with filtering."""
 
-    def __init__(self, config: Optional[MunichGlanceConfig] = None):
+    def __init__(self, config: MunichGlanceConfig | None = None):
         """Initialize multi-station client.
 
         Args:
             config: Plugin configuration (uses global if not provided)
         """
         self.config = config or get_plugin_config()
-        self._cache: Optional[list[Departure]] = None
+        self._cache: list[Departure] | None = None
         self._cache_time: float = 0.0
         # Cache for station name -> (station_id, resolved_name)
         # Station IDs don't change, so we resolve once and reuse
@@ -316,9 +315,7 @@ class MultiStationClient:
                         station["id"],
                         station["name"],
                     )
-                    logger.info(
-                        f"Resolved station: {station['name']} ({station['id']})"
-                    )
+                    logger.info(f"Resolved station: {station['name']} ({station['id']})")
                 else:
                     logger.error(f"Station not found: {station_config.station}")
             except Exception as e:
@@ -469,7 +466,7 @@ class MultiStationClient:
         self._cache_time = 0.0
 
     @property
-    def cache_age(self) -> Optional[float]:
+    def cache_age(self) -> float | None:
         """Get age of cache in seconds."""
         if self._cache_time > 0:
             return time.time() - self._cache_time

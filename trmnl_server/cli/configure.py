@@ -3,7 +3,6 @@
 import asyncio
 import sys
 from dataclasses import dataclass, field
-from typing import Optional
 
 import questionary
 import yaml
@@ -15,8 +14,8 @@ class FilterConfig:
     """A single departure filter configuration."""
 
     transport_type: str
-    line: Optional[str] = None
-    direction: Optional[str] = None
+    line: str | None = None
+    direction: str | None = None
 
 
 @dataclass
@@ -33,7 +32,7 @@ class ConfigSession:
     """Holds the current configuration session state."""
 
     stations: list[StationFilterConfig] = field(default_factory=list)
-    display_station: Optional[str] = None
+    display_station: str | None = None
     all_mvg_stations: list[dict] = field(default_factory=list)
 
 
@@ -140,7 +139,7 @@ def group_departures_by_type_and_line(
     return grouped
 
 
-async def select_station(session: ConfigSession) -> Optional[dict]:
+async def select_station(session: ConfigSession) -> dict | None:
     """Interactive station selection with fuzzy search."""
     while True:
         query = await questionary.text(
@@ -199,7 +198,7 @@ async def select_transport_types(available_types: list[str]) -> list[str]:
 
 async def select_lines_for_type(
     transport_type: str, lines_with_destinations: dict[str, set[str]]
-) -> list[tuple[str, Optional[str]]]:
+) -> list[tuple[str, str | None]]:
     """Let user select lines and directions for a transport type.
 
     Returns:
@@ -209,7 +208,10 @@ async def select_lines_for_type(
     result = []
 
     # First, select which lines
-    line_choices = [questionary.Choice(title=f"{line}", value=line) for line in sorted(lines_with_destinations.keys())]
+    line_choices = [
+        questionary.Choice(title=f"{line}", value=line)
+        for line in sorted(lines_with_destinations.keys())
+    ]
 
     if not line_choices:
         print(f"No {display_type} lines available at this station.")
@@ -251,7 +253,7 @@ async def select_lines_for_type(
         elif selected_direction == "auto":
             # For auto, we need a paired direction. Ask which one to auto-opposite.
             paired = await questionary.select(
-                f"Select the direction to auto-opposite (departures NOT going here):",
+                "Select the direction to auto-opposite (departures NOT going here):",
                 choices=[questionary.Choice(title=d, value=d) for d in destinations],
             ).ask_async()
             # Add both: the explicit direction and the auto
@@ -263,7 +265,7 @@ async def select_lines_for_type(
     return result
 
 
-async def configure_station(session: ConfigSession) -> Optional[StationFilterConfig]:
+async def configure_station(session: ConfigSession) -> StationFilterConfig | None:
     """Configure filters for a single station."""
     # Select station
     station = await select_station(session)
@@ -296,7 +298,9 @@ async def configure_station(session: ConfigSession) -> Optional[StationFilterCon
 
     # Show available types
     available_types = list(grouped.keys())
-    print(f"\nAvailable transport types: {', '.join(TRANSPORT_TYPES.get(t, t) for t in available_types)}")
+    print(
+        f"\nAvailable transport types: {', '.join(TRANSPORT_TYPES.get(t, t) for t in available_types)}"
+    )
 
     # Select transport types
     selected_types = await select_transport_types(available_types)
@@ -386,7 +390,9 @@ async def run_interactive() -> None:
 
         if station_config:
             session.stations.append(station_config)
-            print(f"\nAdded: {station_config.station_name} with {len(station_config.filters)} filter(s)")
+            print(
+                f"\nAdded: {station_config.station_name} with {len(station_config.filters)} filter(s)"
+            )
 
         if session.stations:
             add_more = await questionary.confirm(
@@ -410,8 +416,7 @@ async def run_interactive() -> None:
         session.display_station = session.stations[0].station_name
     else:
         choices = [
-            questionary.Choice(title=s.station_name, value=s.station_name)
-            for s in session.stations
+            questionary.Choice(title=s.station_name, value=s.station_name) for s in session.stations
         ]
         choices.append(questionary.Choice(title="[Enter custom name]", value="_custom_"))
 

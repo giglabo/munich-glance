@@ -42,9 +42,7 @@ jobs:
   docker:
     name: Build & publish image
     runs-on: ubuntu-latest
-    # Not gated on `checks` for now: the existing code carries lint/format
-    # debt, so keep publishing decoupled until that is cleaned up, then
-    # re-add `needs: checks` to make green checks a merge/publish gate.
+    needs: checks
     permissions:
       contents: read
       packages: write

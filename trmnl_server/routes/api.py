@@ -3,7 +3,6 @@
 import logging
 import uuid
 from datetime import datetime, time, timedelta
-from typing import Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Header, Query, Request
@@ -32,23 +31,23 @@ class DisplayResponse(BaseModel):
     filename: str
     refresh_rate: int
     update_firmware: bool = False
-    firmware_url: Optional[str] = None
+    firmware_url: str | None = None
     reset_firmware: bool = False
-    special_function: Optional[str] = None  # sleep, identify, restart_playlist, etc.
+    special_function: str | None = None  # sleep, identify, restart_playlist, etc.
 
 
 class DeviceStatusStamp(BaseModel):
     """Device status information in log entry."""
 
-    wifi_status: Optional[str] = None
-    wakeup_reason: Optional[str] = None
-    current_fw_version: Optional[str] = None
-    free_heap_size: Optional[int] = None
-    special_function: Optional[str] = None
-    refresh_rate: Optional[int] = None
-    battery_voltage: Optional[float] = None
-    time_since_last_sleep_start: Optional[int] = None
-    wifi_rssi_level: Optional[int] = None
+    wifi_status: str | None = None
+    wakeup_reason: str | None = None
+    current_fw_version: str | None = None
+    free_heap_size: int | None = None
+    special_function: str | None = None
+    refresh_rate: int | None = None
+    battery_voltage: float | None = None
+    time_since_last_sleep_start: int | None = None
+    wifi_rssi_level: int | None = None
 
     model_config = {"extra": "allow"}
 
@@ -56,13 +55,13 @@ class DeviceStatusStamp(BaseModel):
 class LogEntry(BaseModel):
     """Single log entry from device."""
 
-    log_id: Optional[int] = None
-    creation_timestamp: Optional[int] = None
-    log_message: Optional[str] = None
-    log_codeline: Optional[int] = None
-    log_sourcefile: Optional[str] = None
-    device_status_stamp: Optional[DeviceStatusStamp] = None
-    additional_info: Optional[dict] = None
+    log_id: int | None = None
+    creation_timestamp: int | None = None
+    log_message: str | None = None
+    log_codeline: int | None = None
+    log_sourcefile: str | None = None
+    device_status_stamp: DeviceStatusStamp | None = None
+    additional_info: dict | None = None
 
     model_config = {"extra": "allow"}
 
@@ -82,15 +81,15 @@ class LogRequest(BaseModel):
     {"log": {"logs_array": [...]}}
     """
 
-    log: Optional[LogArray] = None
+    log: LogArray | None = None
 
     # Legacy format support
-    log_type: Optional[str] = None
-    message: Optional[str] = None
-    firmware_version: Optional[str] = None
-    wifi_rssi: Optional[int] = None
-    battery_voltage: Optional[float] = None
-    free_heap: Optional[int] = None
+    log_type: str | None = None
+    message: str | None = None
+    firmware_version: str | None = None
+    wifi_rssi: int | None = None
+    battery_voltage: float | None = None
+    free_heap: int | None = None
 
     model_config = {"extra": "allow"}
 
@@ -106,7 +105,7 @@ class BatteryRequest(BaseModel):
     """Request body for /api/battery endpoint."""
 
     voltage: float
-    rssi: Optional[int] = None
+    rssi: int | None = None
 
 
 class BatteryResponse(BaseModel):
@@ -125,7 +124,7 @@ class SetupResponse(BaseModel):
     message: str
 
 
-def _get_device_mac(request: Request, header_mac: Optional[str] = None) -> str:
+def _get_device_mac(request: Request, header_mac: str | None = None) -> str:
     """Extract device MAC address from request."""
     # Try header first
     if header_mac:
@@ -212,8 +211,8 @@ def _seconds_until_sleep_end(config) -> int:
 @router.get("/display", response_model=DisplayResponse)
 async def get_display(
     request: Request,
-    x_device_mac: Optional[str] = Header(None, alias="X-Device-MAC"),
-    plugin: Optional[str] = Query(None, description="Specific plugin to display"),
+    x_device_mac: str | None = Header(None, alias="X-Device-MAC"),
+    plugin: str | None = Query(None, description="Specific plugin to display"),
 ) -> DisplayResponse:
     """Get current display image for TRMNL device.
 
@@ -302,9 +301,7 @@ async def get_display(
         async with get_session() as session:
             from sqlalchemy import select
 
-            result = await session.execute(
-                select(Device).where(Device.mac_address == mac)
-            )
+            result = await session.execute(select(Device).where(Device.mac_address == mac))
             device = result.scalar_one_or_none()
 
             if device:
@@ -341,7 +338,7 @@ async def get_display(
 async def post_log(
     request: Request,
     log_data: LogRequest,
-    x_device_mac: Optional[str] = Header(None, alias="X-Device-MAC"),
+    x_device_mac: str | None = Header(None, alias="X-Device-MAC"),
 ) -> LogResponse:
     """Log device events.
 
@@ -399,7 +396,7 @@ async def post_log(
 async def post_battery(
     request: Request,
     battery_data: BatteryRequest,
-    x_device_mac: Optional[str] = Header(None, alias="X-Device-MAC"),
+    x_device_mac: str | None = Header(None, alias="X-Device-MAC"),
 ) -> BatteryResponse:
     """Record battery and RSSI readings.
 
@@ -428,7 +425,7 @@ async def post_battery(
 @router.get("/setup", response_model=SetupResponse)
 async def get_setup(
     request: Request,
-    x_device_mac: Optional[str] = Header(None, alias="X-Device-MAC"),
+    x_device_mac: str | None = Header(None, alias="X-Device-MAC"),
 ) -> SetupResponse:
     """Get device setup information.
 
