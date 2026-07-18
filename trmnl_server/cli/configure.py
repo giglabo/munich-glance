@@ -3,6 +3,7 @@
 import asyncio
 import sys
 from dataclasses import dataclass, field
+from typing import Any, cast
 
 import questionary
 import yaml
@@ -53,7 +54,7 @@ async def load_all_stations() -> list[dict]:
     print("Loading MVG stations...")
     stations = await MvgApi.stations_async()
     print(f"Loaded {len(stations)} stations.")
-    return stations
+    return cast("list[dict[Any, Any]]", stations)
 
 
 def fuzzy_search_stations(
@@ -106,7 +107,7 @@ async def fetch_departures_for_station(station_id: str) -> list[dict]:
 
     try:
         departures = await MvgApi.departures_async(station_id, limit=50)
-        return departures
+        return cast("list[dict[Any, Any]]", departures)
     except Exception as e:
         print(f"Error fetching departures: {e}")
         return []
@@ -205,7 +206,7 @@ async def select_lines_for_type(
         List of (line, direction) tuples. direction is None for "all", "auto", or specific.
     """
     display_type = TRANSPORT_TYPES.get(transport_type, transport_type)
-    result = []
+    result: list[tuple[str, str | None]] = []
 
     # First, select which lines
     line_choices = [
@@ -339,7 +340,7 @@ def generate_yaml_output(session: ConfigSession) -> str:
     # Build departures list
     departures = []
     for station_config in session.stations:
-        station_entry = {"station": station_config.station_name}
+        station_entry: dict[str, Any] = {"station": station_config.station_name}
 
         if station_config.filters:
             filters_list = []
@@ -364,7 +365,9 @@ def generate_yaml_output(session: ConfigSession) -> str:
         "departures": departures,
     }
 
-    return yaml.dump(output, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    return cast(
+        str, yaml.dump(output, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    )
 
 
 async def run_interactive() -> None:

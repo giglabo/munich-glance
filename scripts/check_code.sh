@@ -89,7 +89,7 @@ if command -v flake8 &> /dev/null; then
     echo ""
 fi
 
-# Run mypy if available (non-blocking)
+# Run mypy if available (blocking)
 if command -v mypy &> /dev/null; then
     echo "Running mypy..."
     for dir in "${DIRS_TO_CHECK[@]}"; do
@@ -97,7 +97,8 @@ if command -v mypy &> /dev/null; then
             if mypy "$dir" --ignore-missing-imports; then
                 echo "Mypy check passed for $dir"
             else
-                echo "Warning: Mypy check failed for $dir (non-blocking)"
+                echo "Mypy check failed for $dir"
+                EXIT_CODE=1
             fi
         fi
     done

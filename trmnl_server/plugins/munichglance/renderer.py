@@ -75,7 +75,7 @@ class MunichGlanceRenderer:
         self.fonts_dir = (
             fonts_dir or Path(__file__).parent.parent.parent.parent / "assets" / "fonts"
         )
-        self._fonts: dict[str, ImageFont.FreeTypeFont] = {}
+        self._fonts: dict[str, ImageFont.FreeTypeFont | ImageFont.ImageFont] = {}
         self._tz = ZoneInfo(self.config.timezone)
         self._load_fonts()
 
@@ -187,7 +187,7 @@ class MunichGlanceRenderer:
 
         return img
 
-    def _draw_weather_box(self, draw: ImageDraw.Draw, weather: WeatherData | None) -> None:
+    def _draw_weather_box(self, draw: ImageDraw.ImageDraw, weather: WeatherData | None) -> None:
         """Draw weather section in top-left corner."""
         x = self.WEATHER_MARGIN
         y = self.WEATHER_MARGIN
@@ -234,7 +234,7 @@ class MunichGlanceRenderer:
             fill=self.GRAY,
         )
 
-    def _draw_header(self, draw: ImageDraw.Draw, station_name: str) -> None:
+    def _draw_header(self, draw: ImageDraw.ImageDraw, station_name: str) -> None:
         """Draw station name and current time in header."""
         # Station name - centered in remaining header space
         station_x = self.WEATHER_BOX_WIDTH + 20
@@ -275,13 +275,13 @@ class MunichGlanceRenderer:
             fill=self.BLACK,
         )
 
-    def _draw_separator(self, draw: ImageDraw.Draw, y: int) -> None:
+    def _draw_separator(self, draw: ImageDraw.ImageDraw, y: int) -> None:
         """Draw a horizontal separator line starting after weather box."""
         # Start separator after weather box to avoid crossing date text
         start_x = self.WEATHER_BOX_WIDTH + 10
         draw.line([(start_x, y), (self.WIDTH - 10, y)], fill=self.BLACK, width=1)
 
-    def _draw_departures(self, draw: ImageDraw.Draw, departures: list[Departure]) -> None:
+    def _draw_departures(self, draw: ImageDraw.ImageDraw, departures: list[Departure]) -> None:
         """Draw the departures list."""
         if not departures:
             # No departures message
@@ -299,7 +299,7 @@ class MunichGlanceRenderer:
         else:
             self._draw_departures_flat(draw, departures)
 
-    def _draw_departures_flat(self, draw: ImageDraw.Draw, departures: list[Departure]) -> None:
+    def _draw_departures_flat(self, draw: ImageDraw.ImageDraw, departures: list[Departure]) -> None:
         """Draw departures without grouping."""
         y = self.DEPARTURE_START_Y
 
@@ -319,7 +319,9 @@ class MunichGlanceRenderer:
                     width=1,
                 )
 
-    def _draw_departures_grouped(self, draw: ImageDraw.Draw, departures: list[Departure]) -> None:
+    def _draw_departures_grouped(
+        self, draw: ImageDraw.ImageDraw, departures: list[Departure]
+    ) -> None:
         """Draw departures grouped by station + line, with bidirectional split into columns."""
         y = self.DEPARTURE_START_Y
 
@@ -473,7 +475,7 @@ class MunichGlanceRenderer:
         partial_dests = sorted_dests[2:]
 
         # Build result with main directions
-        result: dict[str, list[tuple[Departure, str | None]]] = {
+        result = {
             main_dir_1: [(d, None) for d in by_destination[main_dir_1]],
             main_dir_2: [(d, None) for d in by_destination[main_dir_2]],
         }
@@ -494,7 +496,7 @@ class MunichGlanceRenderer:
 
     def _draw_bidirectional_columns(
         self,
-        draw: ImageDraw.Draw,
+        draw: ImageDraw.ImageDraw,
         directions: dict[str, list[tuple[Departure, str | None]]],
         start_y: int,
         row_height: int,
@@ -624,7 +626,7 @@ class MunichGlanceRenderer:
 
     def _draw_departure_row_compact(
         self,
-        draw: ImageDraw.Draw,
+        draw: ImageDraw.ImageDraw,
         dep: Departure,
         x: int,
         y: int,
@@ -695,7 +697,7 @@ class MunichGlanceRenderer:
                 fill=self.GRAY,
             )
 
-    def _draw_group_header(self, draw: ImageDraw.Draw, station_name: str, y: int) -> None:
+    def _draw_group_header(self, draw: ImageDraw.ImageDraw, station_name: str, y: int) -> None:
         """Draw a station group header."""
         x = self.DEPARTURE_PADDING + 10
 
@@ -717,7 +719,7 @@ class MunichGlanceRenderer:
         )
 
     def _draw_departure_row(
-        self, draw: ImageDraw.Draw, dep: Departure, y: int, grouped: bool = False
+        self, draw: ImageDraw.ImageDraw, dep: Departure, y: int, grouped: bool = False
     ) -> None:
         """Draw a single departure row.
 
@@ -797,13 +799,13 @@ class MunichGlanceRenderer:
 
     def _draw_transport_badge(
         self,
-        draw: ImageDraw.Draw,
+        draw: ImageDraw.ImageDraw,
         x: int,
         y: int,
         dep: Departure,
-        badge_width: int = None,
-        badge_height: int = None,
-        font: ImageFont.FreeTypeFont = None,
+        badge_width: int | None = None,
+        badge_height: int | None = None,
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont | None = None,
     ) -> None:
         """Draw transport type badge with line number.
 
@@ -861,7 +863,7 @@ class MunichGlanceRenderer:
             fill=text_color,
         )
 
-    def _draw_error_banner(self, draw: ImageDraw.Draw, errors: list[str]) -> None:
+    def _draw_error_banner(self, draw: ImageDraw.ImageDraw, errors: list[str]) -> None:
         """Draw error banner at bottom of screen."""
         banner_height = 30
         banner_y = self.HEIGHT - banner_height
@@ -886,7 +888,7 @@ class MunichGlanceRenderer:
             fill=self.BLACK,
         )
 
-    def _draw_no_departures(self, draw: ImageDraw.Draw) -> None:
+    def _draw_no_departures(self, draw: ImageDraw.ImageDraw) -> None:
         """Draw message when no departures are available."""
         message = "No departures available"
         bbox = draw.textbbox((0, 0), message, font=self._fonts["destination"])
@@ -902,7 +904,7 @@ class MunichGlanceRenderer:
             fill=self.GRAY,
         )
 
-    def _draw_weather_placeholder(self, draw: ImageDraw.Draw) -> None:
+    def _draw_weather_placeholder(self, draw: ImageDraw.ImageDraw) -> None:
         """Draw placeholder when weather is unavailable."""
         x = self.WEATHER_MARGIN + 10
         y = self.WEATHER_MARGIN + 20

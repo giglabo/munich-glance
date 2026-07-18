@@ -228,7 +228,7 @@ class PluginBase(ABC):
     def load_font(
         size: int,
         font_dir: Path,
-        preferred: list[str] = None,
+        preferred: list[str] | None = None,
     ):
         """Load a font with fallbacks.
 

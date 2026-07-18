@@ -27,7 +27,7 @@ class Departure:
     transport_type: str  # Transport type (e.g., "UBAHN", "SBAHN")
     cancelled: bool  # True if cancelled
     platform: str | None = None  # Platform/track if available
-    messages: list[str] = None  # Service messages
+    messages: list[str] | None = None  # Service messages
     station_name: str | None = None  # Source station name (for grouping)
 
     def __post_init__(self):
@@ -82,175 +82,6 @@ class Departure:
         if self.delay > 0:
             return f"+{self.delay}"
         return ""
-
-
-class DeparturesClient:
-    """Async client for MVG departures API."""
-
-    def __init__(self, config: MunichGlanceConfig | None = None):
-        """Initialize departures client.
-
-        Args:
-            config: Plugin configuration (uses global if not provided)
-        """
-        self.config = config or get_plugin_config()
-        self._station_id: str | None = None
-        self._station_name: str | None = None
-        self._cache: list[Departure] | None = None
-        self._cache_time: float = 0.0
-
-    async def get_departures(self) -> list[Departure]:
-        """Fetch departures with caching.
-
-        Returns:
-            List of departures
-        """
-        now = time.time()
-
-        # Check cache freshness
-        if self._cache and (now - self._cache_time) < self.config.departures_cache_ttl:
-            logger.debug("Returning cached departures")
-            return self._cache
-
-        # Fetch fresh data
-        try:
-            departures = await self._fetch_departures()
-            self._cache = departures
-            self._cache_time = now
-            return departures
-        except Exception as e:
-            logger.error(f"Failed to fetch departures: {e}")
-
-            # Return stale cache if available
-            if self._cache:
-                logger.warning("Returning stale departures cache")
-                return self._cache
-
-            return []
-
-    async def _resolve_station(self) -> str | None:
-        """Resolve station name to ID.
-
-        Returns:
-            Station ID or None
-        """
-        # Use configured station ID if available
-        if self.config.station_id:
-            self._station_id = self.config.station_id
-            return self._station_id
-
-        # Already resolved
-        if self._station_id:
-            return self._station_id
-
-        try:
-            from mvg import MvgApi
-
-            # Use async method to avoid sync wrapper bug
-            station = await MvgApi.station_async(self.config.station_name)
-
-            if station:
-                self._station_id = station["id"]
-                self._station_name = station["name"]
-                logger.info(f"Resolved station: {self._station_name} ({self._station_id})")
-                return self._station_id
-            else:
-                logger.error(f"Station not found: {self.config.station_name}")
-                return None
-
-        except Exception as e:
-            logger.error(f"Failed to resolve station: {e}")
-            return None
-
-    async def _fetch_departures(self) -> list[Departure]:
-        """Fetch departures from MVG API.
-
-        Returns:
-            List of departures
-        """
-        station_id = await self._resolve_station()
-        if not station_id:
-            return []
-
-        try:
-            from mvg import MvgApi
-
-            # Fetch departures using async method to avoid sync wrapper bug
-            raw_departures = await MvgApi.departures_async(
-                station_id,
-                limit=self.config.departure_limit + 5,  # Get extra in case of filtering
-                offset=self.config.offset_minutes,
-            )
-
-            departures = []
-            for dep in raw_departures:
-                # Get transport type and normalize it
-                # API returns "S-Bahn", "U-Bahn", "Tram", "Bus" etc.
-                raw_type = dep.get("type", dep.get("transportType", ""))
-                # Normalize: "S-Bahn" -> "SBAHN", "U-Bahn" -> "UBAHN"
-                transport_type = raw_type.upper().replace("-", "").replace(" ", "")
-
-                # Filter by transport type
-                config_types = [t.upper() for t in self.config.transport_types]
-                if transport_type not in config_types:
-                    continue
-
-                # Parse planned time - API returns Unix timestamp in seconds
-                planned_ts = dep.get("planned", dep.get("time", 0))
-                # Handle milliseconds if present
-                if planned_ts > 1e12:
-                    planned_ts = planned_ts / 1000
-                planned_time = datetime.fromtimestamp(planned_ts)
-
-                # Skip if too far in the future
-                minutes_away = (planned_time - datetime.now()).total_seconds() / 60
-                if minutes_away > self.config.max_minutes:
-                    continue
-
-                departure = Departure(
-                    line=dep.get("line", dep.get("label", "")),
-                    destination=dep.get("destination", ""),
-                    planned_time=planned_time,
-                    delay=dep.get("delay", 0) or 0,
-                    transport_type=transport_type,
-                    cancelled=dep.get("cancelled", False),
-                    platform=str(dep.get("platform", "")) if dep.get("platform") else None,
-                    messages=dep.get("messages", []),
-                )
-
-                # Skip cancelled if configured
-                if departure.cancelled and not self.config.show_cancelled:
-                    continue
-
-                departures.append(departure)
-
-                # Stop when we have enough
-                if len(departures) >= self.config.departure_limit:
-                    break
-
-            logger.info(f"Fetched {len(departures)} departures for {self._station_name}")
-            return departures
-
-        except Exception as e:
-            logger.error(f"Failed to fetch departures: {e}")
-            raise
-
-    @property
-    def station_name(self) -> str:
-        """Get resolved station name."""
-        return self._station_name or self.config.station_name
-
-    def clear_cache(self) -> None:
-        """Clear the departures cache."""
-        self._cache = None
-        self._cache_time = 0.0
-
-    @property
-    def cache_age(self) -> float | None:
-        """Get age of cache in seconds."""
-        if self._cache_time > 0:
-            return time.time() - self._cache_time
-        return None
 
 
 class MultiStationClient:
@@ -345,7 +176,7 @@ class MultiStationClient:
         # Merge all departures
         all_departures: list[Departure] = []
         for i, result in enumerate(results):
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 station_name = self.config.multi_station.stations[i].station
                 logger.error(f"Station {station_name} fetch failed: {result}")
                 continue

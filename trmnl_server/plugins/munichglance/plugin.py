@@ -6,10 +6,10 @@ from datetime import datetime
 
 from trmnl_server.config import get_config
 from trmnl_server.plugins.base import PluginBase, PluginOutput
-from trmnl_server.plugins.munichglance.config import get_plugin_config
-from trmnl_server.plugins.munichglance.departures import MultiStationClient
+from trmnl_server.plugins.munichglance.config import MunichGlanceConfig, get_plugin_config
+from trmnl_server.plugins.munichglance.departures import Departure, MultiStationClient
 from trmnl_server.plugins.munichglance.renderer import MunichGlanceRenderer
-from trmnl_server.plugins.munichglance.weather import WeatherClient
+from trmnl_server.plugins.munichglance.weather import WeatherClient, WeatherData
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class MunichGlancePlugin(PluginBase):
         """Initialize MunichGlance plugin."""
         super().__init__()
 
-        self.plugin_config = get_plugin_config()
+        self.plugin_config: MunichGlanceConfig = get_plugin_config()
         self.weather_client = WeatherClient(self.plugin_config)
         self.departures_client = MultiStationClient(self.plugin_config)
         self.renderer = MunichGlanceRenderer(
@@ -54,7 +54,7 @@ class MunichGlancePlugin(PluginBase):
             )
 
     @property
-    def REFRESH_INTERVAL(self) -> int:  # noqa: N802  (overrides uppercase base-class constant)
+    def REFRESH_INTERVAL(self) -> int:  # type: ignore[override]  # noqa: N802 (dynamic override of base constant)
         """Dynamic refresh interval from config."""
         return self.plugin_config.departures_refresh_interval
 
@@ -98,32 +98,37 @@ class MunichGlancePlugin(PluginBase):
 
         errors = []
 
+        weather: WeatherData | None = None
+        departures: list[Departure] = []
+
         # Fetch weather and departures concurrently
         weather_task = self.weather_client.get_weather()
         departures_task = self.departures_client.get_departures()
 
         try:
-            weather, departures = await asyncio.gather(
+            results = await asyncio.gather(
                 weather_task,
                 departures_task,
                 return_exceptions=True,
             )
+            weather_result = results[0]
+            departures_result = results[1]
 
             # Handle exceptions from gather
-            if isinstance(weather, Exception):
-                logger.error(f"Weather fetch failed: {weather}")
+            if isinstance(weather_result, BaseException):
+                logger.error(f"Weather fetch failed: {weather_result}")
                 errors.append("Weather unavailable")
-                weather = None
+            else:
+                weather = weather_result
 
-            if isinstance(departures, Exception):
-                logger.error(f"Departures fetch failed: {departures}")
+            if isinstance(departures_result, BaseException):
+                logger.error(f"Departures fetch failed: {departures_result}")
                 errors.append("Departures unavailable")
-                departures = []
+            else:
+                departures = departures_result
 
         except Exception as e:
             logger.exception(f"Error fetching data: {e}")
-            weather = None
-            departures = []
             errors.append("Data fetch failed")
 
         logger.info(f"Plugin run(): got {len(departures)} departures to render")

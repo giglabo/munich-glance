@@ -109,7 +109,7 @@ class WeatherClient:
         Returns:
             WeatherData or None on failure
         """
-        params = {
+        params: dict[str, str | float] = {
             "latitude": self.config.weather_lat,
             "longitude": self.config.weather_lon,
             "current": "temperature_2m,weather_code,is_day,relative_humidity_2m,wind_speed_10m,precipitation",

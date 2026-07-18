@@ -147,7 +147,7 @@ class RefreshSchedule:
             Refresh rate in seconds
         """
         day_names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-        day_schedule = getattr(self, day_names[weekday], None)
+        day_schedule: DaySchedule | None = getattr(self, day_names[weekday], None)
 
         if day_schedule:
             return day_schedule.get_refresh_rate(current_time)

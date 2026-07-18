@@ -322,9 +322,9 @@ async def get_display(
 
     # Get dynamic refresh rate from plugin if available
     refresh_rate = config.refresh_time  # Default from server config
-    plugin = get_plugin(plugin_name)
-    if plugin and hasattr(plugin, "get_dynamic_refresh_rate"):
-        refresh_rate = plugin.get_dynamic_refresh_rate()
+    plugin_instance = get_plugin(plugin_name)
+    if plugin_instance and hasattr(plugin_instance, "get_dynamic_refresh_rate"):
+        refresh_rate = plugin_instance.get_dynamic_refresh_rate()
 
     return DisplayResponse(
         status=0,

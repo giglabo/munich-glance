@@ -157,7 +157,7 @@ class ConfigLoader:
         Example:
             config.get_nested('server', 'host', default='0.0.0.0')
         """
-        value = self._cfg
+        value: Any = self._cfg
         for key in keys:
             if isinstance(value, dict):
                 value = value.get(key)
@@ -169,7 +169,8 @@ class ConfigLoader:
 
     def get_section(self, section: str) -> dict[str, Any]:
         """Get entire configuration section."""
-        return self._cfg.get(section, {})
+        data = self._cfg.get(section, {})
+        return data if isinstance(data, dict) else {}
 
     @property
     def config(self) -> dict[str, Any]:
