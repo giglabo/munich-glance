@@ -7,8 +7,29 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 
 from trmnl_server.config import get_config
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """StaticFiles that disables caching.
+
+    The generated e-ink screen is rewritten in place (same filename), so any
+    caching by the device, browser, or Cloudflare serves a stale image. Force a
+    revalidation on every request.
+    """
+
+    def is_not_modified(self, response_headers, request_headers) -> bool:  # noqa: ANN001
+        return False
+
+    async def get_response(self, path: str, scope) -> Response:  # noqa: ANN001
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers.pop("ETag", None)
+        response.headers.pop("Last-Modified", None)
+        return response
 from trmnl_server.database import close_db, init_db
 from trmnl_server.routes import api, settings
 from trmnl_server.services.plugins import register_plugins, schedule_plugins
@@ -90,7 +111,7 @@ def create_app() -> FastAPI:
     if config.generated_dir.exists():
         app.mount(
             "/generated",
-            StaticFiles(directory=str(config.generated_dir)),
+            NoCacheStaticFiles(directory=str(config.generated_dir)),
             name="generated",
         )
 

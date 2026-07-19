@@ -208,6 +208,22 @@ def _seconds_until_sleep_end(config) -> int:
         return 28800  # Fallback to 8 hours
 
 
+def _public_base_url(request: Request) -> str:
+    """Build the externally-visible base URL, honoring reverse-proxy headers.
+
+    Traefik terminates TLS and, for the obfuscated route, strips a path prefix before
+    forwarding. Without honoring X-Forwarded-Proto/Host/Prefix the app would emit
+    ``http://host/...`` URLs at the root, bypassing the stripped prefix (e.g. the
+    ``/daag-...`` hash) and downgrading to http. Falls back to the request URL when the
+    headers are absent (direct access).
+    """
+    h = request.headers
+    scheme = h.get("x-forwarded-proto", request.url.scheme).split(",")[0].strip()
+    host = h.get("x-forwarded-host", h.get("host", request.url.netloc)).split(",")[0].strip()
+    prefix = h.get("x-forwarded-prefix", "").strip().rstrip("/")
+    return f"{scheme}://{host}{prefix}"
+
+
 @router.get("/display", response_model=DisplayResponse)
 async def get_display(
     request: Request,
@@ -227,7 +243,7 @@ async def get_display(
 
     # Check if device should be sleeping
     if _is_in_sleep_window(config):
-        base_url = str(request.base_url).rstrip("/")
+        base_url = _public_base_url(request)
 
         # Calculate refresh rate to wake up at sleep_end
         sleep_refresh_rate = _seconds_until_sleep_end(config)
@@ -260,7 +276,7 @@ async def get_display(
 
     if not plugin_name:
         logger.error("No plugin available")
-        base_url = str(request.base_url).rstrip("/")
+        base_url = _public_base_url(request)
         return DisplayResponse(
             status=1,
             image_url=f"{base_url}/generated/error.bmp",
@@ -277,7 +293,7 @@ async def get_display(
 
     if not output or not output.has_image():
         logger.error(f"Plugin {plugin_name} produced no output")
-        base_url = str(request.base_url).rstrip("/")
+        base_url = _public_base_url(request)
         return DisplayResponse(
             status=1,
             image_url=f"{base_url}/generated/error.bmp",
@@ -286,14 +302,14 @@ async def get_display(
         )
 
     # Build image URL - must be a full URL for TRMNL device
-    base_url = str(request.base_url).rstrip("/")
+    base_url = _public_base_url(request)
     if output.bmp_path:
         # Path relative to generated dir
         relative_path = output.bmp_path.relative_to(config.generated_dir)
-        image_url = f"{base_url}/generated/{relative_path}"
+        image_url = f"{base_url}/generated/{relative_path}?v={output.content_hash}"
         filename = f"{output.content_hash}_{output.bmp_path.name}"
     else:
-        image_url = f"{base_url}/generated/screen.bmp"
+        image_url = f"{base_url}/generated/screen.bmp?v={output.content_hash}"
         filename = f"{output.content_hash}_screen.bmp"
 
     # Update device last seen
