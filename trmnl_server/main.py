@@ -10,6 +10,17 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
 
 from trmnl_server.config import get_config
+from trmnl_server.database import close_db, init_db
+from trmnl_server.routes import api, settings
+from trmnl_server.services.plugins import register_plugins, schedule_plugins
+from trmnl_server.services.scheduler import start_scheduler, stop_scheduler
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 class NoCacheStaticFiles(StaticFiles):
@@ -27,20 +38,10 @@ class NoCacheStaticFiles(StaticFiles):
         response = await super().get_response(path, scope)
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
-        response.headers.pop("ETag", None)
-        response.headers.pop("Last-Modified", None)
+        for stale in ("etag", "last-modified"):
+            if stale in response.headers:
+                del response.headers[stale]
         return response
-from trmnl_server.database import close_db, init_db
-from trmnl_server.routes import api, settings
-from trmnl_server.services.plugins import register_plugins, schedule_plugins
-from trmnl_server.services.scheduler import start_scheduler, stop_scheduler
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
