@@ -167,10 +167,9 @@ class ConfigLoader:
                 return default
         return value if value is not None else default
 
-    def get_section(self, section: str) -> dict[str, Any]:
-        """Get entire configuration section."""
-        data = self._cfg.get(section, {})
-        return data if isinstance(data, dict) else {}
+    def get_section(self, section: str) -> Any:
+        """Get entire configuration section (may be a dict or a list, e.g. `departures`)."""
+        return self._cfg.get(section, {})
 
     @property
     def config(self) -> dict[str, Any]:
