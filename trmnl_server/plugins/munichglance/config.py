@@ -191,6 +191,10 @@ class DepartureFilter:
     type: str  # Transport type: UBAHN, SBAHN, TRAM, BUS
     line: str | None = None  # Line name (e.g., "U3", "53") or None for all
     direction: str | None = None  # Destination, "auto", or None
+    # Destination to exclude. Use when one side of a line has several termini
+    # (e.g. 153 towards Giesing also shows shortened runs): naming the single
+    # opposite terminus keeps the whole other direction without listing them all.
+    exclude_direction: str | None = None
 
     def matches(
         self,
@@ -220,6 +224,10 @@ class DepartureFilter:
             normalized_line = line.replace("Bus ", "").replace("Tram ", "").strip()
             if normalized_line != self.line:
                 return False
+
+        # Exclusion filter: drop the opposite direction, keep every terminus of this side
+        if self.exclude_direction and destination.lower() == self.exclude_direction.lower():
+            return False
 
         # Direction filter
         if self.direction:
@@ -259,6 +267,7 @@ class StationConfig:
                     type=filter_data["type"],
                     line=filter_data.get("line"),
                     direction=filter_data.get("direction"),
+                    exclude_direction=filter_data.get("exclude_direction"),
                 )
             )
         return cls(
@@ -349,6 +358,7 @@ class MunichGlanceConfig:
     show_platform: bool = False
     show_cancelled: bool = True
     show_groups: bool = True  # Show station headers when grouping departures
+    layout: str = "list"  # "list" (rows) or "grid" (table of line cells)
     compact_directions: bool = (
         False  # Show all times for each direction on one row (e.g., "5 min / 7 min")
     )
@@ -392,6 +402,7 @@ class MunichGlanceConfig:
             show_platform=_parse_bool(loader.get("mvg", "show_platform", False), False),
             show_cancelled=_parse_bool(loader.get("mvg", "show_cancelled", True), True),
             show_groups=_parse_bool(loader.get("mvg", "show_groups", True), True),
+            layout=loader.get("mvg", "layout", "list"),
             compact_directions=_parse_bool(loader.get("mvg", "compact_directions", False), False),
             time_format=loader.get("mvg", "time_format", "relative"),
             font_scale=float(loader.get("mvg", "font_scale", 1.0)),

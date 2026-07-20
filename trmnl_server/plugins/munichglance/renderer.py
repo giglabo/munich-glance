@@ -46,6 +46,13 @@ class MunichGlanceRenderer:
     BADGE_RADIUS = 4
 
     # Group header settings
+    # Grid layout (mvg.layout: grid) - departures packed into a table of line cells
+    GRID_COLS = 2
+    GRID_CELL_HEIGHT = 62
+    GRID_GUTTER = 14
+    GRID_MARGIN_X = 14
+    GRID_MAX_TIMES = 3
+
     GROUP_HEADER_HEIGHT = 22
     FONT_GROUP_HEADER = 14
 
@@ -293,11 +300,129 @@ class MunichGlanceRenderer:
             )
             return
 
+        # Grid layout packs each line/direction into a cell of a 2-column table
+        if getattr(self.config, "layout", "list") == "grid":
+            self._draw_departures_grid(draw, departures)
+            return
+
         # Check if we should show groups
         if self.config.show_groups:
             self._draw_departures_grouped(draw, departures)
         else:
             self._draw_departures_flat(draw, departures)
+
+    def _ellipsize(self, draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> str:
+        """Trim text to max_width, appending an ellipsis when it does not fit."""
+        if draw.textlength(text, font=font) <= max_width:
+            return text
+        while text and draw.textlength(text + "\u2026", font=font) > max_width:
+            text = text[:-1]
+        return (text.rstrip() + "\u2026") if text else "\u2026"
+
+    def _draw_departures_grid(self, draw: ImageDraw.ImageDraw, departures: list[Departure]) -> None:
+        """Draw departures as a table, keeping the per-station grouping.
+
+        Each station gets its header, and that station's line+direction cells flow
+        across GRID_COLS columns, so several lines share a row instead of each
+        taking a full-width row.
+        """
+        stations: dict[
+            str, tuple[dict[tuple[str, str], list[Departure]], list[tuple[str, str]]]
+        ] = {}
+        station_order: list[str] = []
+        for dep in departures:
+            station = dep.station_name or ""
+            if station not in stations:
+                stations[station] = ({}, [])
+                station_order.append(station)
+            cells, cell_order = stations[station]
+            key = (dep.line, dep.destination)
+            if key not in cells:
+                cells[key] = []
+                cell_order.append(key)
+            cells[key].append(dep)
+
+        # Keep the station order from the config instead of "soonest departure first"
+        multi_station = getattr(self.config, "multi_station", None)
+        if multi_station:
+            configured = [s.station for s in multi_station.stations]
+            station_order.sort(
+                key=lambda name: configured.index(name) if name in configured else len(configured)
+            )
+
+        col_width = (self.WIDTH - 2 * self.GRID_MARGIN_X - self.GRID_GUTTER) // self.GRID_COLS
+        bottom = self.HEIGHT - 8
+        dest_font = self._fonts["destination"]
+        time_font = self._fonts["minutes_small"]
+        badge_font = self._fonts["group_header"]
+
+        y = self.DEPARTURE_START_Y
+        for station in station_order:
+            cells, cell_order = stations[station]
+            # Need room for the header plus at least one cell row
+            if y + self.GROUP_HEADER_HEIGHT + self.GRID_CELL_HEIGHT > bottom:
+                break
+
+            self._draw_group_header(draw, station, y)
+            y += self.GROUP_HEADER_HEIGHT
+
+            drawn = 0
+            for index, key in enumerate(cell_order):
+                col = index % self.GRID_COLS
+                row = index // self.GRID_COLS
+                cell_y = y + row * self.GRID_CELL_HEIGHT
+                if cell_y + self.GRID_CELL_HEIGHT > bottom:
+                    break
+                cell_x = self.GRID_MARGIN_X + col * (col_width + self.GRID_GUTTER)
+                cell = cells[key]
+                head = cell[0]
+
+                self._draw_transport_badge(
+                    draw,
+                    cell_x,
+                    cell_y,
+                    head,
+                    badge_width=self.BADGE_WIDTH_GROUPED,
+                    badge_height=self.BADGE_HEIGHT_GROUPED,
+                    font=badge_font,
+                )
+
+                text_x = cell_x + self.BADGE_WIDTH_GROUPED + 8
+                text_width = col_width - (self.BADGE_WIDTH_GROUPED + 8)
+                draw.text(
+                    (text_x, cell_y + 3),
+                    self._ellipsize(draw, head.destination, dest_font, text_width),
+                    font=dest_font,
+                    fill=self.BLACK,
+                )
+
+                times = [
+                    d.format_time(self.config.time_format) for d in cell[: self.GRID_MAX_TIMES]
+                ]
+                time_text = " / ".join(times)
+                if len(cell) > self.GRID_MAX_TIMES:
+                    time_text += " \u2026"
+                draw.text(
+                    (text_x, cell_y + 28),
+                    self._ellipsize(draw, time_text, time_font, text_width),
+                    font=time_font,
+                    fill=self.BLACK,
+                )
+                drawn += 1
+
+            if not drawn:
+                break
+
+            rows_used = (drawn + self.GRID_COLS - 1) // self.GRID_COLS
+            # Vertical divider between the two columns of this station block
+            if drawn > 1:
+                divider_x = self.GRID_MARGIN_X + col_width + self.GRID_GUTTER // 2
+                draw.line(
+                    [(divider_x, y), (divider_x, y + rows_used * self.GRID_CELL_HEIGHT - 12)],
+                    fill=self.LIGHT_GRAY,
+                    width=1,
+                )
+            y += rows_used * self.GRID_CELL_HEIGHT
 
     def _draw_departures_flat(self, draw: ImageDraw.ImageDraw, departures: list[Departure]) -> None:
         """Draw departures without grouping."""

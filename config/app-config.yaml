@@ -129,7 +129,7 @@ mvg:
   display_station: Ridlerstraße
 
   # Maximum number of departures to display (across all stations)
-  departure_limit: 15
+  departure_limit: 40
 
   # Walking time offset in minutes
   # Departures sooner than this will be filtered out
@@ -154,6 +154,9 @@ mvg:
   # with slightly smaller departure rows
   # Bidirectional departures (same line, 2 directions) are shown in two columns
   show_groups: true
+
+  # Departure layout: "list" (one row each) or "grid" (table of line cells)
+  layout: grid
 
   # Compact direction display mode
   # When enabled, shows all departure times for each direction on a single row
@@ -189,6 +192,10 @@ departures:
   filters:
   - type: BUS
     line: '53'
+    direction: Aidenbachstraße
+  - type: BUS
+    line: '153'
+    exclude_direction: Heimeranplatz   # drop the load-relief short runs; keep the Giesing side
   - type: BUS
     line: '134'
     direction: Fürstenried West
@@ -201,6 +208,9 @@ departures:
   filters:
   - type: BUS
     line: '62'
+    direction: Rotkreuzplatz
+  - type: BUS
+    line: '63'
     direction: Rotkreuzplatz
 
 # =============================================================================
