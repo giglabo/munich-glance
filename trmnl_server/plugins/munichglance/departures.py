@@ -12,6 +12,8 @@ from trmnl_server.plugins.munichglance.config import (
     get_plugin_config,
 )
 from trmnl_server.plugins.munichglance.icons import TransportStyle, get_transport_style
+from trmnl_server.timezone import get_timezone
+from trmnl_server.timezone import now as local_now
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +46,10 @@ class Departure:
     @property
     def minutes_until(self) -> int:
         """Minutes until departure (including delay)."""
-        now = datetime.now()
-        delta = self.actual_time - now
+        from trmnl_server.timezone import now as local_now
+        from trmnl_server.timezone import to_local
+
+        delta = to_local(self.actual_time) - local_now()
         return max(0, int(delta.total_seconds() / 60))
 
     @property
@@ -235,10 +239,10 @@ class MultiStationClient:
             planned_ts = dep.get("planned", dep.get("time", 0))
             if planned_ts > 1e12:
                 planned_ts = planned_ts / 1000
-            planned_time = datetime.fromtimestamp(planned_ts)
+            planned_time = datetime.fromtimestamp(planned_ts, tz=get_timezone())
 
             # Skip if too far in the future
-            minutes_away = (planned_time - datetime.now()).total_seconds() / 60
+            minutes_away = (planned_time - local_now()).total_seconds() / 60
             if minutes_away > self.config.max_minutes:
                 continue
 

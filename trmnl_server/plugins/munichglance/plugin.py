@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-from datetime import datetime
 
 from trmnl_server.config import get_config
 from trmnl_server.plugins.base import PluginBase, PluginOutput
@@ -10,6 +9,7 @@ from trmnl_server.plugins.munichglance.config import MunichGlanceConfig, get_plu
 from trmnl_server.plugins.munichglance.departures import Departure, MultiStationClient
 from trmnl_server.plugins.munichglance.renderer import MunichGlanceRenderer
 from trmnl_server.plugins.munichglance.weather import WeatherClient, WeatherData
+from trmnl_server.timezone import now as local_now
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ class MunichGlancePlugin(PluginBase):
         if not self.plugin_config.refresh_schedule:
             return self.plugin_config.departures_refresh_interval
 
-        now = datetime.now()
+        now = local_now()
         return self.plugin_config.refresh_schedule.get_refresh_rate(
             weekday=now.weekday(),  # 0=Monday
             current_time=now.time(),
